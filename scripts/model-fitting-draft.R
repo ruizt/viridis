@@ -48,6 +48,8 @@ snakes %>%
   geom_path(aes(y = temp), alpha = 0.6) +
   facet_wrap(~id)
 
+ggsave(filename = 'img/exploratory/lme-time-smooth-conditional-means.png', width = 12, height = 12, units = 'in')
+
 # same, on hourly time axis
 snakes %>%
   mutate(pred = predict(fit, level = 1)) %>%
@@ -55,6 +57,8 @@ snakes %>%
   geom_path(alpha = 0.6, color = 'black') +
   geom_path(aes(y = temp), alpha = 0.2) +
   facet_wrap(~id)
+
+ggsave(filename = 'img/exploratory/lme-time-smooth-conditional-means-hourly.png', width = 12, height = 12, units = 'in')
 
 # population-level estimates w. ci 
 
@@ -73,6 +77,8 @@ ggplot(pred_df, aes(x = hour, y = pred, color = type)) +
                   ymax = pred + 2*pred.se, 
                   fill = type),
               alpha = 0.3, color = NA) 
+
+ggsave(filename = 'img/exploratory/lme-time-smooth-fitted-group-means-hourly.png', width = 8, height = 6, units = 'in')
 
 # F tests -- better to test main + interaction simultaneously?
 anova(fit, type = 'sequential')

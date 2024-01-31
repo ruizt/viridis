@@ -12,12 +12,16 @@ snakes %>%
   theme(axis.text.x = element_text(angle = 90)) +
   labs(x = '')
 
+ggsave(filename = 'img/exploratory/raw-tb-30d.png', width = 8, height = 8, units = 'in')
+
 snakes %>%
   ggplot(aes(x = datetime, 
              y = temp,
              color = type,
              group = id)) +
   geom_path(alpha = 0.2)
+
+ggsave(filename = 'img/exploratory/raw-tb-30d-overlaid.png', width = 12, height = 6, units = 'in')
 
 snakes %>%
   ggplot(aes(x = hour,
@@ -30,6 +34,8 @@ snakes %>%
               span = 0.2,
               aes(x = hour, y = temp, color = type), 
               se = F, inherit.aes = F, alpha = 0.5)
+
+ggsave(filename = 'img/exploratory/hourly-overlaid-loess.png', width = 8, height = 6, units = 'in')
 
 night <- c(18:24, 0:6)
 snakes %>%
@@ -46,6 +52,8 @@ snakes %>%
               method = 'loess', 
               span = 1, se = F)
 
+ggsave(filename = 'img/exploratory/daily-medians-day-night.png', width = 10, height = 5, units = 'in')
+
 # group averages
 snakes %>%
   group_by(type, datetime, day, hour) %>%
@@ -53,11 +61,15 @@ snakes %>%
   ggplot(aes(x = datetime, y = mean_temp, color = type)) +
   geom_path()
 
+ggsave(filename = 'img/exploratory/daily-group-means.png', width = 8, height = 4, units = 'in')
+
 snakes %>%
   group_by(type, datetime, day, hour) %>%
   summarize(mean_temp = mean(temp))  %>%
   ggplot(aes(x = hour, y = mean_temp, color = type)) +
   geom_path(aes(group = interaction(type, day)), alpha = 0.2)
+
+ggsave(filename = 'img/exploratory/hourly-group-means.png', width = 8, height = 4, units = 'in')
 
 ## model 1: hourly categorical, no correlation
 
@@ -74,11 +86,16 @@ fit1_df %>%
   geom_path(alpha = 0.2) +
   geom_path(aes(y = pred))
 
+ggsave(filename = 'img/exploratory/lm-time-categorical-fitted-means.png', width = 8, height = 4, units = 'in')
+
 # same, by time of day
 fit1_df %>%
   ggplot(aes(x = hour, y = temp, color = type)) +
   geom_path(aes(group = interaction(id, day)), alpha = 0.05) +
   geom_path(aes(y = pred, group = interaction(day, id)))
+
+ggsave(filename = 'img/exploratory/lm-time-categorical-fitted-means-hourly.png', width = 8, height = 4, units = 'in')
+
 
 # estimated vs. observed group differences (n - g)
 group_means <- snakes %>%
@@ -96,7 +113,9 @@ data_grid(snakes, type, hour) %>%
   # scale_y_continuous(limits = c(-9, 0.5)) +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_path(aes(group = day), data = group_means, alpha = 0.1)
-  
+
+ggsave(filename = 'img/exploratory/lm-time-categorical-estimated-diffs-hourly.png', width = 8, height = 4, units = 'in')
+
 # check residual autocorrelation
 pacf_fn <- function(x){
   pacf_out <- pacf(x, plot = F)
@@ -117,7 +136,9 @@ fit1_df %>%
   geom_ribbon(aes(ymin = -se, ymax = se), 
               fill = 'blue', 
               alpha = 0.1)
-  
+
+ggsave(filename = 'img/exploratory/lm-time-categorical-resid-autocorrelation.png', width = 10, height = 10, units = 'in')
+
 # check residual variance
 fit1_df %>%
   group_by(id) %>%
@@ -141,14 +162,20 @@ fit2_df %>%
   geom_path(alpha = 0.2) +
   geom_path(aes(y = pred))
 
+ggsave(filename = 'img/exploratory/lm-time-smooth-fitted-means.png', width = 8, height = 4, units = 'in')
+
+
 # same, by time of day
-fit2_df %>%
-  ggplot(aes(x = hour, y = temp, color = type)) +
-  geom_path(aes(group = interaction(id, day)), alpha = 0.05) +
-  geom_path(aes(y = pred, group = interaction(day, id)))
+data_grid(snakes, type, hour = seq_range(hour, n = 100)) %>%
+  add_predictions(fit2) %>%
+  ggplot(aes(x = hour, y = pred, color = type)) +
+  geom_path(aes(x = hour, y = pred)) +
+  geom_path(aes(y = temp, group = interaction(id, day)), data = fit2_df, alpha = 0.05)
+
+ggsave(filename = 'img/exploratory/lm-time-smooth-fitted-means-hourly.png', width = 8, height = 4, units = 'in')
 
 # estimated vs. observed group differences (n - g)
-data_grid(snakes, type, hour) %>%
+data_grid(snakes, type, hour = seq_range(hour, n = 100)) %>%
   add_predictions(fit2) %>%
   pivot_wider(id_cols = hour, values_from = pred, names_from = type) %>%
   mutate(delta = N - G) %>%
@@ -157,6 +184,8 @@ data_grid(snakes, type, hour) %>%
   # scale_y_continuous(limits = c(-9, 0.5)) +
   geom_hline(yintercept = 0, linetype = 2) +
   geom_path(aes(group = day), data = group_means, alpha = 0.1)
+
+ggsave(filename = 'img/exploratory/lm-time-smooth-estimated-diffs-hourly.png', width = 8, height = 4, units = 'in')
 
 # AR1 still seems appropriate
 fit2_df %>%
@@ -169,6 +198,9 @@ fit2_df %>%
   geom_ribbon(aes(ymin = -se, ymax = se), 
               fill = 'blue', 
               alpha = 0.1)
+
+ggsave(filename = 'img/exploratory/lm-time-smooth-resid-autocorrelation.png', width = 10, height = 10, units = 'in')
+
 
 # check residual variance
 fit2_df %>%
@@ -203,6 +235,9 @@ fit3_df %>%
   geom_path(alpha = 0.2) +
   geom_path(aes(y = pred))
 
+ggsave(filename = 'img/exploratory/lm-time-binned-fitted-means.png', width = 8, height = 4, units = 'in')
+
+
 # estimated group differences
 ungroup(snakes_thinned) %>%
   data_grid(type, time.of.day) %>%
@@ -214,6 +249,8 @@ snakes_thinned %>%
   summarize(group_mean = mean(temp)) %>%
   ggplot(aes(x = time.of.day, y = group_mean, color = type)) +
   geom_boxplot()
+
+ggsave(filename = 'img/exploratory/lm-time-binned-fitted-means-hourly.png', width = 5, height = 5, units = 'in')
 
 
 # autocorrelation is weaker, but also series are much shorter
@@ -228,6 +265,8 @@ fit3_df %>%
   geom_ribbon(aes(ymin = -se, ymax = se), 
               fill = 'blue', 
               alpha = 0.1)
+
+ggsave(filename = 'img/exploratory/lm-time-binned-resid-autocorrelation.png', width = 8, height = 4, units = 'in')
 
 # residual variance 
 fit3_df %>%
