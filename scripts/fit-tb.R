@@ -20,11 +20,17 @@ ggsave(p_raw,
        filename = 'img/results/tb-raw-60d.png', 
        width = 8, height = 8, units = 'in')
 
-# add basis expansions
+# add basis expansions and date position
+dates <- snakes %>%
+  dplyr::distinct(datetime) %>% 
+  arrange(datetime) %>%
+  mutate(t = row_number())
+  
 snakes_aug <- snakes %>%
   bind_cols(fb.hour = fourier(snakes$hour, nbasis = 7, period = 23)[, -1],
             fb.day = fourier(snakes$day, nbasis = 3, period = 365)[, -1]) %>%
-  mutate(id = factor(id))
+  mutate(id = factor(id)) %>%
+  left_join(dates, by = 'datetime')
 
 # define grouping structure by snake for random effects
 snakes_gr <- groupedData(temp ~ type | id, data = snakes_aug)
@@ -32,7 +38,7 @@ snakes_gr <- groupedData(temp ~ type | id, data = snakes_aug)
 # define random effects structure
 pdDg <- pdDiag(diag(6), ~fb.hour - 1, data = snakes_aug)
 reSt <- reStruct(list(id = pdDg))
-corSt <- corAR1()
+corSt <- corAR1(value = 0.8, form = ~ 1 | id)
 
 # fit model
 fit <- lme(fixed = temp ~ type*fb.hour*fb.day,

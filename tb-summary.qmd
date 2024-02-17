@@ -40,28 +40,28 @@ Lastly, the error term $\epsilon_{ik}(h, d)$ is an autoregressive process of ord
 
 The model thus has, accounting for the sum constraints, a total of 42 fixed free parameters: the grand mean $\mu$, $\tau_1$, 6 $\alpha_j$ and 6 $\tilde{\alpha}_{1j}$, 2 $\beta_l$ and 2 $\tilde{\beta}_{1l}$, 12 $\gamma_{jl}$ and 12 $\tilde{\gamma}_{1jl}$. The correlation structure for the random portion of the model comprises 8 parameters: 6 variance parameters $\sigma^2_{j}$, the autoregressive parameter $\phi$, and the residual variance $\sigma^2$.
 
-Several quantities of interest can be derived from the model by manipulating the basis representations of $f_i$ and $g_{ik}$. The interaction-term parameters in $f_i$ can be dropped to obtain population- or group-level temporal and seasonal fluctuations in mean body temperature, and the random coefficients can be added to any of these to obtain individual-level fluctuations.
+<!-- Several quantities of interest can be derived from the model by manipulating the basis representations of $f_i$ and $g_{ik}$. The interaction-term parameters in $f_i$ can be dropped to obtain population- or group-level temporal and seasonal fluctuations in mean body temperature, and the random coefficients can be added to any of these to obtain individual-level fluctuations. -->
 
-$$\begin{align}
-\mu + \sum_j \alpha_j \cdot \phi_j^{(h)} 
-&\quad\text{(population daily fluctuations)}\\
-\mu + \sum_l \beta_l \cdot \phi_l^{(d)} 
-&\quad\text{(population seasonal fluctuations)}\\
-\mu + \sum_j \alpha_j \cdot \phi_j^{(t)} + 
-    \sum_l \beta_l  \cdot \phi_l^{(d)} + 
-    \sum_i \sum_l \gamma_{jl} \cdot \phi_j^{(h)}\phi_l^{(d)}
-&\quad\text{(population mean over time)}\\
-\mu + \tau_i + \sum_j \left(\alpha_j + \tilde{\alpha}_{ij})\right) \cdot \phi_j^{(h)}
-&\quad\text{(group daily fluctuations)} \\
-\mu + \tau_i + \sum_j \left(\beta_l + \tilde{\beta}_{il})\right) \cdot \phi_j^{(d)}
-&\quad\text{(group seasonal fluctuation)} \\
-\mu + \tau_i + f_i(h, d) 
-&\quad\text{(group means over time)} \\
-\mu + \tau_i + \sum_j \left(\alpha_j + \tilde{\alpha}_{ij} + \delta_{ijk}\right) \cdot \phi_j^{(t)} 
-&\quad\text{(individual daily fluctuations)} \\
-\mu + \tau_i + f_i(h, d) + g_{ik}(h)
-&\quad\text{(individual means over time)}
-\end{align}$$
+<!-- $$\begin{align} -->
+<!-- \mu + \sum_j \alpha_j \cdot \phi_j^{(h)}  -->
+<!-- &\quad\text{(population daily fluctuations)}\\ -->
+<!-- \mu + \sum_l \beta_l \cdot \phi_l^{(d)}  -->
+<!-- &\quad\text{(population seasonal fluctuations)}\\ -->
+<!-- \mu + \sum_j \alpha_j \cdot \phi_j^{(t)} +  -->
+<!--     \sum_l \beta_l  \cdot \phi_l^{(d)} +  -->
+<!--     \sum_i \sum_l \gamma_{jl} \cdot \phi_j^{(h)}\phi_l^{(d)} -->
+<!-- &\quad\text{(population mean over time)}\\ -->
+<!-- \mu + \tau_i + \sum_j \left(\alpha_j + \tilde{\alpha}_{ij})\right) \cdot \phi_j^{(h)} -->
+<!-- &\quad\text{(group daily fluctuations)} \\ -->
+<!-- \mu + \tau_i + \sum_j \left(\beta_l + \tilde{\beta}_{il})\right) \cdot \phi_j^{(d)} -->
+<!-- &\quad\text{(group seasonal fluctuation)} \\ -->
+<!-- \mu + \tau_i + f_i(h, d)  -->
+<!-- &\quad\text{(group means over time)} \\ -->
+<!-- \mu + \tau_i + \sum_j \left(\alpha_j + \tilde{\alpha}_{ij} + \delta_{ijk}\right) \cdot \phi_j^{(t)}  -->
+<!-- &\quad\text{(individual daily fluctuations)} \\ -->
+<!-- \mu + \tau_i + f_i(h, d) + g_{ik}(h) -->
+<!-- &\quad\text{(individual means over time)} -->
+<!-- \end{align}$$ -->
 
 Parameters are estimated by REML.
 
@@ -117,7 +117,7 @@ VarCorr(fit) %>%
   pander(digits = 3)
 ```
 
-The autoregressive parameter was estimated to be $\hat{\phi}$ = `r fit$modelStruct$corStruct` 
+The autoregressive parameter was estimated to be $\hat{\phi}$ = `r coef(fit$modelStruct$corStruct, unconstrained = F)` 
 
 ### Estimated random parameters
 

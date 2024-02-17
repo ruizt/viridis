@@ -66,23 +66,23 @@ otm_aug %>%
 
 # # random effects structure
 otm_gr <- groupedData(temp ~ treatment | site, data = otm_aug)
-pdDg <- pdDiag(diag(10), ~ fb.hour*treatment - 1, data = otm_aug)
+pdDg <- pdDiag(diag(10), ~ fb.hour*treatment - 1, data = otm_gr)
 reSt <- reStruct(list(id = pdDg))
-# corSt <- corAR1(form = ~ treatment | id)
+corSt <- corAR1(value = 0.8, form = ~ 1 | id)
 
 # fit model
 fit <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
            random = reSt,
-           # correlation = corSt,
+           correlation = corSt,
            data = otm_gr)
 
-save('data/fit-te.RData')
+save(fit, file = 'data/fit-te.RData')
 
 # estimates
 fit_sum <- summary(fit) # model summary
 fit_sum$tTable[, 1:2] # fixed effects
 VarCorr(fit) # random effect variances
-# fit$modelStruct$corStruct # autoregressive parameter
+fit$modelStruct$corStruct # autoregressive parameter
 ranef(fit) # estimated random effects
 lsmeans::lsmeans(fit, 'location')
 lsmeans::lsmeans(fit, 'treatment')
