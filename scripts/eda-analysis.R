@@ -1,5 +1,6 @@
 library(tidyverse)
 library(modelr)
+library(fda)
 load('data/snakes.RData')
 
 # raw data plots
@@ -272,3 +273,75 @@ ggsave(filename = 'img/exploratory/lm-time-binned-resid-autocorrelation.png', wi
 fit3_df %>%
   group_by(id) %>%
   summarize(var.resid = var(resid)) 
+
+## USING LONGER TIME RANGE
+load('data/snakes-months.RData')
+
+snakes %>%
+  ggplot(aes(x = datetime, 
+             y = temp, 
+             color = type)) + 
+  geom_path(alpha = 0.5) +
+  facet_wrap(~id, nrow = 4) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(x = '')
+
+ggsave(filename = 'img/exploratory/raw-tb-60d.png', width = 8, height = 8, units = 'in')
+
+snakes %>%
+  ggplot(aes(x = datetime, 
+             y = temp,
+             color = type,
+             group = id)) +
+  geom_path(alpha = 0.2)
+
+ggsave(filename = 'img/exploratory/raw-tb-60d-overlaid.png', width = 12, height = 6, units = 'in')
+
+# compute fit
+fit <- lm(temp ~ type*(fourier(hour, nbasis = 7, period = 23)[, -1])*(fourier(day, nbasis = 3, period = 365)[, -1]), data = snakes)
+
+fit_df <- snakes %>%
+  add_predictions(fit) %>%
+  add_residuals(fit)
+
+anova(fit)
+
+# estimated means vs observations
+fit_df %>%
+  ggplot(aes(x = datetime, y = temp, color = type, group = id)) +
+  geom_path(alpha = 0.2) +
+  geom_path(aes(y = pred))
+
+ggsave(filename = 'img/exploratory/lm-60d-fitted-means.png', width = 10, height = 4, units = 'in')
+
+# monthly means
+data_grid(snakes, type, day, hour = seq(0, 23, by = 3)) %>%
+  add_predictions(fit) %>%
+  ggplot(aes(x = day, y = pred, color = type)) +
+  facet_wrap(~hour, nrow = 1) +
+  geom_path()
+
+ggsave(filename = 'img/exploratory/lm-60d-daily-means-by-hour.png', width = 12, height = 4, units = 'in')
+
+# check residual autocorrelation
+pacf_fn <- function(x){
+  pacf_out <- pacf(x, plot = F)
+  out <- bind_cols(pacf = pacf_out$acf[, 1, 1],
+                   lag = pacf_out$lag[, , 1],
+                   se = 2/sqrt(pacf_out$n.used))
+  return(out)
+}
+
+# AR1 seems appropriate
+fit_df %>%
+  nest(cols = resid, .by = c(id, type)) %>% 
+  mutate(pacf = map(cols, pacf_fn)) %>%
+  unnest(pacf) %>%
+  ggplot(aes(x = lag)) +
+  facet_wrap(~id) +
+  geom_linerange(aes(ymin = 0, ymax = pacf)) +
+  geom_ribbon(aes(ymin = -se, ymax = se), 
+              fill = 'blue', 
+              alpha = 0.1)
+
+ggsave(filename = 'img/exploratory/lm-60d-resid-autocorrelation.png', width = 10, height = 10, units = 'in')
