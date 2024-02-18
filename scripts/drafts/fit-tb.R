@@ -20,17 +20,53 @@ ggsave(p_raw,
        filename = 'img/results/tb-raw-60d.png', 
        width = 8, height = 8, units = 'in')
 
-# add basis expansions and date position
-dates <- snakes %>%
-  dplyr::distinct(datetime) %>% 
-  arrange(datetime) %>%
-  mutate(t = row_number())
-  
+# add basis expansions 
 snakes_aug <- snakes %>%
   bind_cols(fb.hour = fourier(snakes$hour, nbasis = 7, period = 23)[, -1],
             fb.day = fourier(snakes$day, nbasis = 3, period = 365)[, -1]) %>%
-  mutate(id = factor(id)) %>%
-  left_join(dates, by = 'datetime')
+  mutate(id = factor(id))
+
+# fit model with fixed effects only
+fit_lm <- lm(temp ~ type*fb.hour*fb.day, data = snakes_aug)
+
+snakes_grid <- data_grid(snakes, 
+                      type,
+                      day = seq_range(day, n = 30), 
+                      hour = seq_range(hour, n = 100))
+
+snakes_grid_aug <- snakes_grid %>%
+  bind_cols(fb.hour = fourier(snakes_grid$hour, nbasis = 7, period = 23)[, -1],
+            fb.day = fourier(snakes_grid$day, nbasis = 3, period = 365)[,-1]) 
+
+snakes_grid_aug %>%
+  add_predictions(fit_lm) %>%
+  ggplot(aes(x = hour, 
+             y = pred, 
+             color = day, 
+             group = interaction(day, type))) +
+  facet_wrap(~type, nrow = 1) +
+  geom_path(alpha = 0.2)
+
+# check residual autocorrelation -- a few seem to be arma not ar
+pacf_fn <- function(x){
+  pacf_out <- pacf(x, plot = F)
+  out <- bind_cols(pacf = pacf_out$acf[, 1, 1],
+                   lag = pacf_out$lag[, , 1],
+                   se = 2/sqrt(pacf_out$n.used))
+  return(out)
+}
+
+snakes_aug %>%
+  add_residuals(fit_lm) %>%
+  nest(cols = resid, .by = c(id, type)) %>% 
+  mutate(pacf = map(cols, pacf_fn)) %>%
+  unnest(pacf) %>%
+  ggplot(aes(x = lag)) +
+  facet_wrap(~id) +
+  geom_linerange(aes(ymin = 0, ymax = pacf)) +
+  geom_ribbon(aes(ymin = -se, ymax = se), 
+              fill = 'blue', 
+              alpha = 0.1)
 
 # define grouping structure by snake for random effects
 snakes_gr <- groupedData(temp ~ type | id, data = snakes_aug)

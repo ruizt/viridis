@@ -64,7 +64,7 @@ otm_aug %>%
               fill = 'blue', 
               alpha = 0.1)
 
-# # random effects structure
+# random effects structure
 otm_gr <- groupedData(temp ~ treatment | site, data = otm_aug)
 pdDg <- pdDiag(diag(10), ~ fb.hour*treatment - 1, data = otm_gr)
 reSt <- reStruct(list(id = pdDg))
