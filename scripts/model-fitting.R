@@ -50,7 +50,7 @@ otm_aug <- otm %>%
 
 # random effects structure
 otm_gr <- groupedData(temp ~ treatment | site, data = otm_aug)
-pdDg <- pdDiag(diag(10), ~ fb.hour*treatment - 1, data = otm_gr)
+pdDg <- pdDiag(diag(8), ~ fb.hour:treatment - 1, data = otm_gr)
 reSt <- reStruct(list(id = pdDg))
 corSt <- corAR1(value = 0.8, form = ~ 1 | id)
 
@@ -61,7 +61,7 @@ fit <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
            data = otm_gr)
 
 # save fitted model
-save(list = ls(), file = 'data/fit-te.RData')
+save(list = ls(), file = 'data/fit-te-rep.RData')
 
 # clear environment
 rm(list = ls())

@@ -18,13 +18,24 @@ ranef(fit) # estimated random effects
 
 # conditional inference
 anova(fit, type = 'sequential')[-1,] 
+anova(fit, type = 'sequential')[-1,] |>
+  xtable::xtable(digits = 5) |>
+  print() |>
+  clipr::write_clip()
 
 # marginal means
 fit_emm <- emmeans(fit, specs = 'type')
-summary(fit_emm)
+# summary(fit_emm) |> tibble() |>
+#   xtable::xtable(digits = 3) |>
+#   print() |>
+#   clipr::write_clip()
+
 
 # difference in means
-pairs(fit_emm) |> confint()
+pairs(fit_emm) |> confint() |> tibble() |>
+  xtable::xtable(digits = 3) |>
+  print() |>
+  clipr::write_clip()
 
 # raw data figure
 p_raw <- snakes %>%
@@ -169,13 +180,29 @@ ranef(fit) # estimated random effects
 
 # marginal means and pairwise comparisons
 fit_emm <- emmeans(fit, specs = c('location', 'treatment'))
-summary(fit_emm) |> arrange(emmean)
-pairs(fit_emm) |> confint()
-emmeans(fit, specs = 'location') |> pairs() |> confint()
-emmeans(fit, specs = 'treatment') |> pairs() |> confint()
+summary(fit_emm) |> arrange(emmean) |> tibble() |>
+  xtable::xtable(digits = 3) |>
+  print() |>
+  clipr::write_clip()
+pairs(fit_emm) |> confint() |> tibble() |>
+  xtable::xtable(digits = 3) |>
+  print() |>
+  clipr::write_clip()
+emmeans(fit, specs = 'location') |> pairs() |> confint() |> tibble() |>
+  xtable::xtable(digits = 3) |>
+  print() |>
+  clipr::write_clip()
+emmeans(fit, specs = 'treatment') |> pairs() |> confint() |> tibble() |>
+  xtable::xtable(digits = 3) |>
+  print() |>
+  clipr::write_clip()
 
 # conditional inference
 anova(fit, type = 'sequential')[-1,] 
+anova(fit, type = 'sequential')[-1,] |>
+  xtable::xtable(digits = 5) |>
+  print() |>
+  clipr::write_clip()
 
 # raw data plot
 p_raw <- otm %>%
@@ -277,7 +304,7 @@ p_lev0_pred_trt <- level0_preds %>%
   guides(color = guide_legend(override.aes = list(alpha = 0.4))) +
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'time', y = expr(hat(t)[e]))
-p_lev0_pred
+p_lev0_pred_trt
 
 ggsave(plot = p_lev0_pred_trt,
        filename = 'img/figs/te-level0-preds.png',
