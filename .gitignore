@@ -52,3 +52,6 @@ rsconnect/
 refs
 img
 data
+
+# other
+.DS_Store
