@@ -30,14 +30,14 @@ contrasts_tb <- pairs(fit_emm_tb) |>
   dplyr::select(Group, Estimate, SE, CI) 
 
 bind_rows(group_means_tb, contrasts_tb) |>
-  write_csv(file = 'results/tb-means.csv')
+  write_csv(file = 'results/tbl/tb-means.csv')
 
 ## ------------------------------------------------------------
 anova_tb <- anova(fit_tb, type = 'sequential')[-1,] 
 rownames(anova_tb) <- c('Group', 'Hour', 'Day', 'Group:Hour', 'Group:Day', 'Hour:Day', 'Group:Hour:Day')
 anova_tb |>
   rownames_to_column(var = 'Term') |>
-  write_csv(file = 'results/tb-anova.csv')
+  write_csv(file = 'results/tbl/tb-anova.csv')
 
 ## ------------------------------------------------------------
 emmeans(fit_te, ~ location*treatment) |>
@@ -48,7 +48,7 @@ emmeans(fit_te, ~ location*treatment) |>
   mutate(CI = paste('(', round(lower.CL, 2), 
                           ', ', round(upper.CL, 2), ')')) |>
   dplyr::select(Location, Exposure, Estimate, SE, CI) |>
-  write_csv(file = 'results/te-means.csv')
+  write_csv(file = 'results/tbl/te-means.csv')
 
 
 ## ------------------------------------------------------------
@@ -69,7 +69,7 @@ contr_exposure_te <- emmeans(fit_te, ~ treatment) |>
   dplyr::select(Contrast, Estimate, SE, CI)
 
 bind_rows(contr_location_te, contr_exposure_te) |>
-  write_csv(file = 'results/te-contrasts.csv')
+  write_csv(file = 'results/tbl/te-contrasts.csv')
 
 ## ------------------------------------------------------------
 anova_te <- anova(fit_te, type = 'sequential')[-1,] 
@@ -85,4 +85,4 @@ rownames(anova_te) <- c('Location', 'Exposure',
 
 anova_te |>
   rownames_to_column(var = 'Term') |>
-  write_csv(file = 'results/te-anova.csv')
+  write_csv(file = 'results/tbl/te-anova.csv')
