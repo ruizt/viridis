@@ -9,30 +9,30 @@ options(contrasts = rep('contr.sum', 2))
 ##########################
 
 # load data
-load('data/snakes-60d.RData')
+load('data/tb.RData')
 
 # add basis expansions 
-snakes_aug <- snakes %>%
-  bind_cols(fb.hour = fourier(snakes$hour, nbasis = 7, period = 23)[, -1],
-            fb.day = fourier(snakes$day, nbasis = 3, period = 365)[, -1]) %>%
+tb_aug <- tb %>%
+  bind_cols(fb.hour = fourier(tb$hour, nbasis = 7, period = 23)[, -1],
+            fb.day = fourier(tb$day, nbasis = 3, period = 365)[, -1]) %>%
   mutate(id = factor(id)) 
 
 # define grouping structure by snake for random effects
-snakes_gr <- groupedData(temp ~ type | id, data = snakes_aug)
+tb_gr <- groupedData(temp ~ type | id, data = tb_aug)
 
 # define random effects structure
-pdDg <- pdDiag(diag(6), ~fb.hour - 1, data = snakes_aug)
-reSt <- reStruct(list(id = pdDg))
-corSt <- corAR1(value = 0.8, form = ~ 1 | id)
+pdDg_tb <- pdDiag(diag(6), ~fb.hour - 1, data = tb_aug)
+reSt_tb <- reStruct(list(id = pdDg_tb))
+corSt_tb <- corAR1(value = 0.8, form = ~ 1 | id)
 
 # fit model
-fit <- lme(fixed = temp ~ type*fb.hour*fb.day,
-           random = reSt,
-           correlation = corSt,
-           data = snakes_gr)
+fit_tb <- lme(fixed = temp ~ type*fb.hour*fb.day,
+           random = reSt_tb,
+           correlation = corSt_tb,
+           data = tb_gr)
 
 # save environment
-save(list = ls(), file = 'data/fit-tb.RData')
+save(list = ls(), file = 'results/fit-tb.RData')
 
 # clear environment
 rm(list = ls())
@@ -41,27 +41,27 @@ rm(list = ls())
 ####################################
 
 # load data
-load('data/otm.RData')
+load('data/te.RData')
 
 # add basis expansions for time and day
-otm_aug <- otm %>%
-  bind_cols(fb.hour = fourier(otm$hour, nbasis = 5, period = 23)[, -1],
-            fb.day = fourier(otm$day, nbasis = 3, period = 365)[,-1]) 
+te_aug <- te %>%
+  bind_cols(fb.hour = fourier(te$hour, nbasis = 5, period = 23)[, -1],
+            fb.day = fourier(te$day, nbasis = 3, period = 365)[,-1]) 
 
 # random effects structure
-otm_gr <- groupedData(temp ~ treatment | site, data = otm_aug)
-pdDg <- pdDiag(diag(8), ~ fb.hour:treatment - 1, data = otm_gr)
-reSt <- reStruct(list(id = pdDg))
-corSt <- corAR1(value = 0.8, form = ~ 1 | id)
+te_gr <- groupedData(temp ~ treatment | site, data = te_aug)
+pdDg_te <- pdDiag(diag(8), ~ fb.hour:treatment - 1, data = te_gr)
+reSt_te <- reStruct(list(id = pdDg_te))
+corSt_te <- corAR1(value = 0.8, form = ~ 1 | id)
 
 # fit model
-fit <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
-           random = reSt,
-           correlation = corSt,
-           data = otm_gr)
+fit_te <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
+           random = reSt_te,
+           correlation = corSt_te,
+           data = te_gr)
 
 # save fitted model
-save(list = ls(), file = 'data/fit-te-rep.RData')
+save(list = ls(), file = 'results/fit-te.RData')
 
 # clear environment
 rm(list = ls())

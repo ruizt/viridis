@@ -22,7 +22,7 @@ theme_set(theme_classic() +
 
 #### Morphometrics of snakes from sites ####
  
-Morpho <- read.csv("data/Cviridis_Morphometrics.csv")
+Morpho <- read.csv("C:/Users/Haley/Desktop/Indofiles/C. viridis/R datasets/viridis_morphometrics.csv") %>%
 
 Morpho <- Morpho %>%
   mutate(Repro = ifelse(grepl("NP*", SnakeID),
@@ -46,14 +46,9 @@ t.test(Mass_g ~ Repro, data = Morpho)
 #### Thermal Gradient ####
 # To calculate thermal preferences which are used to later define environmental quality (de) and thermoregulatory efficiency (db)
 
-TGradient <- read.csv("data/Cviridis_ThermalGradient.csv") %>%
+TGradient <- read.csv("C:/Users/haley/OneDrive/Desktop/CalPoly/Projects/C. viridis/R datasets/Cviridis_ThermalGradient.csv") %>%
   mutate(SnakeID = factor(SnakeID),
          Repro = factor(Repro))
-
-TGradient %>%
-  group_by(Repro, SnakeID) %>%
-  get_summary_stats(Tb, show = c('q1', 'median', 'q3')) %>%
-  write_csv('data/gradient-summary.csv')
 
 #Summary statistics
 TGradient %>%
@@ -220,27 +215,32 @@ ggplot(EnvShade, aes(Time, Temp)) +
 MeanEnv_Hour <- Env %>%
   group_by(Location, Exposure, Time) %>%
   get_summary_stats(Temp, show = c("mean", "ci"))
+### HALEY REMOVE THE OTM SHADED THAT IS CLEARLY IN THE SUN
 
 
 # Fig 1A - Te by Time of Day [have previously had to reformat Location & Exposure as.factor() but okay now]
 
 Fig1A <-
-  ggplot(MeanEnv_Hour, aes(Time, mean, group = interaction(Location, Treatment), colour = Location)) +
-  geom_point(size = 4, aes(shape = interaction(Location, Treatment))) +
+  ggplot(MeanEnv_Hour, aes(Time, mean, group = interaction(Location, Exposure), colour = interaction(Location, Exposure))) +
+  annotate('rect', xmin = 0, xmax = 23, ymin = PregLow, ymax = PregHigh, alpha = 0.25, fill = 'royalblue3') +
+  annotate('rect', xmin = 0, xmax = 23, ymin = NonLow, ymax = NonHigh, alpha = 0.25, fill = 'coral1') +
   geom_line(linewidth = 1) +
   geom_errorbar(aes(ymin = mean - ci,
                     ymax = mean + ci), width = 0.3) + 
-  annotate('rect', xmin = 0, xmax = 23, ymin = PregLow, ymax = PregHigh, alpha = 0.3, fill = 'royalblue3') +
-  annotate('rect', xmin = 0, xmax = 23, ymin = NonLow, ymax = NonHigh, alpha = 0.3, fill = 'gold') +
-  xlab("Time of Day (Hour)") + ylab("Mean Operative Model Temperature (\u00b0C)") +
-  labs(colour = "Location", shape = "Exposure") +
-  scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2")) +
+  geom_point(size = 4, aes(shape = interaction(Location, Exposure))) +
+  xlab("Hour") +
+  ylab("Mean Operative Model Temperature (\u00b0C)") +
+  labs(tag = "A") +
+  scale_shape_manual(values = c(1, 0, 16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3"),
+                     name = NULL) +
   theme(
     legend.position = c(.95, .95),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
-    legend.margin = margin(6, 6, 6, 6)
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
   )
 
 ggsave(filename = "Fig1A.jpg",
@@ -248,7 +248,7 @@ ggsave(filename = "Fig1A.jpg",
        device = "jpg",
        dpi = 600,
        units = "mm",
-       width = 260, height = 100)
+       width = 280, height = 200)
 
 
 MeanEnv_DayNight <- Env %>%
@@ -259,21 +259,24 @@ MeanEnv_DayNight <- Env %>%
 # Fig 1B. Te over dates by location and exposure - have had to as.factor(Location, Exposure, DayNight)
 Fig1B <- 
   ggplot(MeanEnv_DayNight,
-         aes(Date, mean, group = interaction(Location, Exposure), colour = Location)) +
+         aes(Date, mean, group = interaction(Location, Exposure), colour = interaction(Location, Exposure))) +
   geom_point(size = 4, aes(shape = interaction(Location, Exposure))) +
-  stat_smooth(se = TRUE, alpha = 0.3) +
-  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-08-21"), ymin = PregLow, ymax = PregHigh, alpha=.2, fill='royalblue3') +
-  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-08-21"), ymin = NonLow, ymax = NonHigh, alpha=.2, fill='gold') +
-  facet_wrap(~DayNight) + # or by location
-  xlab("Date") + ylab("Mean Operative Model Temperature (\u00b0C)") +
-  labs(title = "Fig1B. Te by Date", colour = "Location", shape = "Exposure") +
-  scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2")) +
+  stat_smooth(se = TRUE, alpha = 0.25) +
+  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-08-21"), ymin = PregLow, ymax = PregHigh, alpha = 0.25, fill = 'royalblue3') +
+  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-08-21"), ymin = NonLow, ymax = NonHigh, alpha = 0.25, fill = 'coral1') +
+  facet_wrap(~DayNight) +
+  xlab("") + ylab("Mean Operative Model Temperature (\u00b0C)") +
+  scale_shape_manual(values = c(1, 0, 16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3"),
+                     name = NULL) +
+  labs(tag = "B") +
   theme(
-    legend.position = c(.95, .95),
+    legend.position = c(1, 1),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
-    legend.margin = margin(6, 6, 6, 6)
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
   )
 
 ggsave(filename = "Fig1B.jpg",
@@ -281,7 +284,7 @@ ggsave(filename = "Fig1B.jpg",
        device = "jpg",
        dpi = 600,
        units = "mm",
-       width = 280, height = 240)
+       width = 280, height = 200)
 
 
 
@@ -349,7 +352,7 @@ ggplot(Tsel, aes(x = factor(Time), y = Temp, colour = Repro)) +
   facet_wrap(~Month)
   labs(y = "Temp (C)", x = "Time", title = "Tb by month") +
   annotate('rect', xmin = 0, xmax = 24, ymin = PregLow, ymax = PregHigh, alpha=.2, fill='royalblue3') +
-  annotate('rect', xmin = 0, xmax = 24, ymin = NonLow, ymax = NonHigh, alpha=.2, fill='gold')
+  annotate('rect', xmin = 0, xmax = 24, ymin = NonLow, ymax = NonHigh, alpha=.2, fill='coral1')
 
 Mean_Tsel <- Tsel %>%
   group_by(Repro, Month, Time) %>%
@@ -361,7 +364,7 @@ ggplot(na.omit(Mean_Tsel), aes(x = Time, y = mean, group = interaction(Month, Re
   geom_path() + 
   labs(y = "Temp (C)", x = "Time", title = "Tb by month") +
   annotate('rect', xmin = 0, xmax = 24, ymin = PregLow, ymax = PregHigh, alpha=.2, fill='royalblue3') +
-  annotate('rect', xmin = 0, xmax = 24, ymin = NonLow, ymax = NonHigh, alpha=.2, fill='gold')
+  annotate('rect', xmin = 0, xmax = 24, ymin = NonLow, ymax = NonHigh, alpha=.2, fill='coral1')
 
 
 MeanTsel_Hour <- Tsel %>%
@@ -372,20 +375,23 @@ MeanTsel_Hour <- Tsel %>%
 
 Fig3A <-
   ggplot(MeanTsel_Hour, aes(Time, mean, colour = Repro)) +
-  geom_point(size = 3, aes(shape = Repro)) +
+  annotate('rect', xmin = 0, xmax = 24, ymin = PregLow, ymax = PregHigh, alpha = 0.25, fill='royalblue3') +
+  annotate('rect', xmin = 0, xmax = 24, ymin = NonLow, ymax = NonHigh, alpha = 0.25, fill='coral1') +
+  geom_point(size = 4, aes(shape = Repro)) +
   scale_shape_manual(values = c(16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2")) +
+  scale_color_manual(values = c("coral", "slateblue3")) +
   geom_line(linewidth = 1) +
-  geom_errorbar(aes(ymin = mean - ci, ymax = mean + ci), width = 0.3, linewidth = 1) + 
-  xlab("Time of Day (Hour)") + ylab("Mean Field Active Body Temperature (\u00b0C)") +
-  annotate('rect', xmin = 0, xmax = 24, ymin = PregLow, ymax = PregHigh, alpha = 0.2, fill='royalblue3') +
-  annotate('rect', xmin = 0, xmax = 24, ymin = NonLow, ymax = NonHigh, alpha = 0.2, fill='gold') +
+  geom_errorbar(aes(ymin = mean - ci, ymax = mean + ci), width = 0.3) + 
+  xlab("Hour") + ylab("Mean Field Active Body Temperature (\u00b0C)") +
+  labs(tag = "A") +
   theme(
     legend.position = c(0.8, 0.03),
     legend.justification = c("center", "bottom"),
     legend.box.just = "center",
-    legend.margin = margin(6, 6, 6, 6)
-  )
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
+  ) +
+  xlim(0,23)
 
 ggsave(filename = "Fig3A.jpg",
        plot = Fig3A,
@@ -405,16 +411,20 @@ Fig3B <-
   ggplot(MeanTsel_DayNight, aes(Date, mean, group = interaction(Repro, DayNight), colour = interaction(Repro, DayNight))) +
   geom_point(size = 4, aes(shape = interaction(Repro, DayNight))) +
   geom_smooth() +
-  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-09-01"), ymin = PregLow, ymax = PregHigh, alpha = 0.2, fill = 'royalblue3') +
-  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-09-01"), ymin = NonLow, ymax = NonHigh, alpha = 0.2, fill = 'gold') +
   xlab("Date") + ylab("Mean Field Active Body Temp (\u00b0C)") +
-  scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2", "slateblue3", "gold2")) +
+  labs(tag = "B") +
+  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-09-01"), ymin = PregLow, ymax = PregHigh, alpha = 0.25, fill = 'royalblue3') +
+  annotate('rect', xmin = as.Date("2020-6-01"), xmax = as.Date("2020-09-01"), ymin = NonLow, ymax = NonHigh, alpha = 0.25, fill = 'coral1') +
+  scale_shape_manual(values = c(1, 0, 16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3"),
+                     name = NULL) +
   theme(
     legend.position = c(0.8, 0.03),
     legend.justification = c("center", "bottom"),
     legend.box.just = "center",
-    legend.margin = margin(6, 6, 6, 6)
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
   )
 
 ggsave(filename = "Fig3B.jpg",
@@ -467,22 +477,26 @@ de_Hour <- de %>%
 
 # Fig2A. de by Hour, June through August - Prairie Te to NP Tpref, Rook Te to P Tpref
 Fig2A <- 
-  ggplot(de_Hour, aes(Time, mean, colour = Location, group = interaction(Location, Exposure))) +
+  ggplot(de_Hour, aes(Time, mean, colour = interaction(Location, Exposure), group = interaction(Location, Exposure))) +
+  geom_hline(yintercept = 0) +
+  annotate(geom = "text", x = 1.4, y = 0.8, label = "Perfect Thermal Quality", size = 5) +
   geom_point(size = 4, aes(shape = interaction(Location, Exposure))) +
   geom_errorbar(aes(ymin = mean - ci, ymax = mean + ci), width = 0.3) +
   geom_path(linewidth = 1) +
-  geom_hline(yintercept = 0) +
-  labs(colour = "Location", shape = "Exposure") +
-  xlab("Time of Day (Hour)") + ylab("Mean Thermal Quality (de)") +
-  annotate(geom = "text", x = 1.5, y = 0.8, label = "Perfect Thermal Quality", size = 5) +
-  scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2")) +
+  xlab("Hour") + ylab("Mean Thermal Quality (de)") +
+  labs(tag = "A") +
+  scale_shape_manual(values = c(1, 0, 16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3"),
+                     name = NULL) +
   theme(
     legend.position = c(.95, .95),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
-    legend.margin = margin(6, 6, 6, 6)
-  )
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
+  ) +
+  xlim(0,23)
 
 
 ggsave(filename = "Fig2A.jpg",
@@ -495,29 +509,45 @@ ggsave(filename = "Fig2A.jpg",
 
 de_Month <- de %>%
   group_by(Exposure, Location, Date, DayNight) %>%
-  get_summary_stats(de, show = c("mean", "ci"))
+  get_summary_stats(de, show = c("mean", "ci", "se"))
 
 
 # Fig 2B. Fig2B. de by Date - Prairie Te to NP Tpref, Rook Te to p Tpref
 Fig2B <- 
   ggplot(de_Month, aes(Date, mean, group = interaction(Location, Exposure, DayNight), colour = interaction(Location, Exposure))) +
-  geom_point(size = 3, aes(shape = interaction(Location, Exposure))) +
-  geom_smooth(SE = TRUE) +
-  xlab("Date") + ylab("Mean Thermal Quality (de)") +
   geom_hline(yintercept = 0) +
-  scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2", "slateblue3", "gold2")) +
+  geom_point(size = 4, aes(shape = interaction(Location, Exposure))) +
+  geom_smooth() +
+  xlab("Date") + ylab("Mean Thermal Quality (de)") +
+  labs(tag = "B") +
+  scale_shape_manual(values = c(1, 0, 16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3"),
+                     name = NULL) +
   facet_wrap(~DayNight) +
   theme(
     legend.position = c(.95, .95),
     legend.justification = c("right", "top"),
     legend.box.just = "right",
-    legend.margin = margin(6, 6, 6, 6)
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
   )
 
+# tag_facet removes facet strips, which we want to stay - this is the tag_facet function, minus the theme modifier that removes the strips
+tag_facet2 <- function(p, open = "(", close = ")", tag_pool = letters, x = -Inf, y = Inf, 
+                       hjust = -0.5, vjust = 1.5, fontface = 2, family = "", ...) {
+  
+  gb <- ggplot_build(p)
+  lay <- gb$layout$layout
+  tags <- cbind(lay, label = paste0(open, tag_pool[lay$PANEL], close), x = x, y = y)
+  p + geom_text(data = tags, aes_string(x = "x", y = "y", label = "label"), ..., hjust = hjust, 
+                vjust = vjust, fontface = fontface, family = family, inherit.aes = FALSE)
+}
+
 detag <- c("", "Perfect Thermal Quality")
-Fig2B <-  tag_facet(Fig2B, 
-                    x = as.Date("2020-06-18"), y = 2.7,
+Fig2B <-  tag_facet2(Fig2B, 
+                    x = as.Date("2020-07-20"), y = 2,
+                    hjust = 0.05,
                     open = "", close = "",
                     size = 5,
                     family = "sans",
@@ -529,7 +559,7 @@ ggsave(filename = "Fig2B.jpg",
        device = "jpg",
        dpi = 600,
        units = "mm",
-       width = 280, height = 180)
+       width = 280, height = 200)
 
 
 # Inset
@@ -545,10 +575,20 @@ deInset <-
   facet_wrap(~DayNight, strip.position = "top") +
   geom_hline(yintercept = 0) +
   scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2", "slateblue3", "gold2")) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3")) +
   ylab("Mean Thermal Quality (de)") +
   xlab("") +
   theme(legend.position = "none")
+
+#deViolin <- 
+  ggplot(de_Inset, aes(Exposure, mean, group = interaction(Location, Exposure), fill = interaction(Location, Exposure))) +
+  geom_violin(alpha = 0.7, scale = "width") +
+  geom_hline(yintercept = 0) +
+  scale_fill_manual(values = c("coral", "slateblue3", "coral", "slateblue3")) +
+  ylab("Mean Thermal Quality (de)") +
+  xlab("") #+
+  #facet_wrap(~DayNight)
+    
 
 ggsave(filename = "deInset.jpg",
        plot = deInset,
@@ -599,25 +639,30 @@ Fig4A <-
   ggplot(db_Hour, aes(Time, mean, colour = Repro, group = Repro)) +
   geom_hline(yintercept = 0) +
   geom_point(size = 4, aes(shape = Repro)) +
-  geom_errorbar(aes(ymin = mean - ci, ymax = mean + ci), width = 0.3, linewidth = 1) +
+  geom_errorbar(aes(ymin = mean - ci, ymax = mean + ci), width = 0.3) +
   geom_path(linewidth = 1) +
-  xlab("Time of Day (Hour)") + ylab("Mean Thermoregulatory Accuracy (db)") +
-  annotate(geom = "text", x = 2.5, y = 0.2, label = "Perfect Thermoregulatory Accuracy", size = 5) +
-  scale_shape_manual(values = c(16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2")) +
+  xlab("Hour") + ylab("Mean Thermoregulatory Accuracy (db)") +
+  labs(tag = "A") +
+  annotate(geom = "text", x = 2.8, y = 0.25, label = "Perfect Thermoregulatory Accuracy", size = 5) +
+  scale_shape_manual(values = c(16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3"),
+                     name = NULL) +
   theme(
     legend.position = c(0.8, 0.02),
     legend.justification = c("center", "bottom"),
     legend.box.just = "center",
-    legend.margin = margin(6, 6, 6, 6)
-  )
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
+  ) +
+  xlim(0,23)
 
 ggsave(filename = "Fig4A.jpg",
        plot = Fig4A,
        device = "jpg",
        dpi = 600,
        units = "mm",
-       width = 300, height = 200)
+       width = 280, height = 200)
 
 
 db_Month <- db %>%
@@ -629,29 +674,34 @@ db_Month <- db %>%
 
 Fig4B <-
   ggplot(db_Month, aes(Date, mean, group = interaction(Repro, DayNight), colour = interaction(Repro, DayNight))) +
-  geom_point(size = 3, aes(shape = interaction(Repro, DayNight))) +
+  geom_hline(yintercept = 0) +
+  geom_point(size = 4, aes(shape = interaction(Repro, DayNight))) +
   geom_smooth(SE = TRUE) +
   xlab("Date") + ylab("Mean Thermoregulatory Accuracy (db)") +
-  geom_hline(yintercept = 0) +
-  scale_shape_manual(values = c(1, 0, 16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2", "slateblue3", "gold2")) +
-  #facet_wrap(~DayNight) +
+  labs(tag = "B") +
+  annotate(geom = "text", x = as.Date("2020-08-15"), y = 0.35, label = "Perfect Thermoregulatory Accuracy", size = 5) +
+  scale_shape_manual(values = c(1, 0, 16, 15),
+                     name = NULL) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3"),
+                     name = NULL) +
+  facet_wrap(~DayNight) +
   theme(
-    legend.position = c(0.09, 0.01),
+    legend.position = c(0.1, 0.01),
     legend.justification = c("left", "bottom"),
     legend.box.just = "right",
-    legend.margin = margin(6, 6, 6, 6)
-  )
-# remove September label
+    legend.margin = margin(6, 6, 6, 6),
+    plot.tag.position = c(0.01, 0.98)
+  ) +
+  xlim(as.Date("2020-06-01"), as.Date("2020-08-31"))
 
 dbtag <- c("", "Perfect Thermoregulatory Accuracy")
-Fig4B <-tag_facet(Fig4B, 
-                  x = as.Date("2020-06-05"), y = 1,
-                  open = "", close = "",
-                  size = 5,
-                  family = "sans",
-                  fontface = 1,
-                  tag_pool = dbtag)
+#Fig4B <-tag_facet2(Fig4B,  # only need if I'm faceting by DayNight
+#                  x = as.Date("2020-06-09"), y = 0.9,
+#                  open = "", close = "",
+#                  size = 5,
+#                  family = "sans",
+#                  fontface = 1,
+#                  tag_pool = dbtag)
 
 ggsave(filename = "Fig4B.jpg",
        plot = Fig4B,
@@ -664,7 +714,7 @@ ggsave(filename = "Fig4B.jpg",
 # Inset
 db_Inset <- db %>%
   group_by(Repro, DayNight) %>%
-  get_summary_stats(db, show = c("mean", "ci"))
+  get_summary_stats(db, show = c("mean", "ci", "se"))
 
 dbInset <-
   ggplot(db_Inset, aes(DayNight, mean, colour = Repro)) +
@@ -673,7 +723,7 @@ dbInset <-
   #facet_wrap(~DayNight, strip.position = "top") +
   geom_hline(yintercept = 0) +
   scale_shape_manual(values = c(16, 15)) +
-  scale_color_manual(values = c("slateblue3", "gold2", "slateblue3", "gold2")) +
+  scale_color_manual(values = c("coral", "slateblue3", "coral", "slateblue3")) +
   ylab("Mean Thermoregulatory Accuracy (db)")+
   xlab("") +
   theme(legend.position = "none")
@@ -686,6 +736,12 @@ ggsave(filename = "dbInset.jpg",
        units = "mm",
        width = 120, height = 120)
 
+#dbViolin <- 
+  ggplot(db_Inset, aes(Repro, mean, fill = Repro)) +
+  geom_violin(alpha = 0.7, scale = "width") +
+  geom_hline(yintercept = 0) +
+  scale_fill_manual(values = c("coral", "slateblue3")) +
+  ylab("Mean Thermoregulatory Accuracy (db)") +
+  xlab("") #+
+#facet_wrap(~DayNight)
 
-#### Notes to Trevor ####
-# We'd previously been removing the major storm in June after truncating the "active season" to June-Aug. I'm not sure this is the most appropriate approach though
