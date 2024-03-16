@@ -51,9 +51,10 @@ rsconnect/
 # directories
 refs
 img
-data
 
 # other
 .DS_Store
 data/raw/
 scripts/drafts/
+results/img/
+results/tbl/
