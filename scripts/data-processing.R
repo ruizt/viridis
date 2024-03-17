@@ -57,8 +57,7 @@ tb <- tb_raw %>%
          hour = hour(datetime)) %>%
   dplyr::select(id, type, datetime, day, hour, temp)
 
-# save
-save(tb, file = 'data/tb.RData')
+# export csv
 write_csv(tb, file = 'data/tb.csv')
 
 ## Te data processing
@@ -88,6 +87,43 @@ te <- te_raw %>%
   mutate(day = yday(datetime),
          hour = hour(datetime))
 
-# save
-save(te, file = 'data/te.RData')
+# export csv
 write_csv(te, file = 'data/te.csv')
+
+
+## gradient data processing
+############################
+
+# read in raw data and parse dates
+gradient_raw <- read_csv('data/raw/Cviridis_ThermalGradient.csv') |>
+  rename_with(tolower) |>
+  mutate(time = as.character(time)) |>
+  unite('datetime', date:time, sep = ' ') |>
+  mutate(datetime = mdy_hms(datetime))
+
+# observation summary
+gradient_raw |>
+  group_by(snakeid, repro, run) |>
+  arrange(datetime) |>
+  summarize(n.obs = n(),
+            start = min(datetime),
+            end = max(datetime),
+            obs.freq.max = max(diff(datetime)),
+            obs.freq.min = min(diff(datetime))) |>
+  mutate(duration = (end - start)) |>
+  mutate(duration = seconds_to_period(duration)) |>
+  arrange(run) |>
+  write_csv('data/gradient-metadata.csv')
+
+gradient <- gradient_raw |>
+  group_by(snakeid, repro) |>
+  summarize(tb.med = median(tb),
+            tb.q1 = quantile(tb, 0.25),
+            tb.q3 = quantile(tb, 0.75),
+            n.obs = n())
+
+# export csv
+write_csv(gradient, file = 'data/gradient.csv')
+
+# write r binary file
+save(list = c('gradient', 'tb', 'te'), file = 'data/viridis-data.RData')

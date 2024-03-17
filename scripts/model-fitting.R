@@ -4,12 +4,10 @@ library(modelr)
 library(fda)
 library(nlme)
 options(contrasts = rep('contr.sum', 2))
+load('data/viridis-data.RData')
 
 ## BODY TEMPERATURES (Tb)
 ##########################
-
-# load data
-load('data/tb.RData')
 
 # add basis expansions 
 tb_aug <- tb %>%
@@ -31,17 +29,8 @@ fit_tb <- lme(fixed = temp ~ type*fb.hour*fb.day,
            correlation = corSt_tb,
            data = tb_gr)
 
-# save environment
-save(list = ls(), file = 'results/fit-tb.RData')
-
-# clear environment
-rm(list = ls())
-
 ## ENVIRONMENTAL TEMPERATURES (Te)
 ####################################
-
-# load data
-load('data/te.RData')
 
 # add basis expansions for time and day
 te_aug <- te %>%
@@ -60,8 +49,8 @@ fit_te <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
            correlation = corSt_te,
            data = te_gr)
 
-# save fitted model
-save(list = ls(), file = 'results/fit-te.RData')
+## EXPORT ENVIRONMENT
+######################
 
-# clear environment
-rm(list = ls())
+# save fitted model
+save(list = ls(), file = 'results/fit.RData')

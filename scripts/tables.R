@@ -6,8 +6,7 @@ library(fda)
 library(nlme)
 library(emmeans)
 library(pander)
-load('results/fit-tb.RData')
-load('results/fit-te.RData')
+load('results/fit.RData')
 
 ## ------------------------------------------------------------
 fit_emm_tb <- emmeans(fit_tb, specs = 'type')

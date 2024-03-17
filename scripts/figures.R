@@ -5,8 +5,8 @@ library(fda)
 library(nlme)
 library(emmeans)
 library(gridExtra)
-load('results/fit-tb.RData')
-load('results/fit-te.RData')
+load('results/fit.RData')
+res <- 300
 
 ## SUPPLEMENTAL FIGURE S01 -------------------------------------------------
 
@@ -67,8 +67,8 @@ tb_fitted <- tb_level1_pred_df |>
   guides(color = guide_colorbar(title = 'date'))
 
 s01 <- gridExtra::grid.arrange(tb_raw, tb_fitted, nrow = 2)
-ggsave(s01, filename = 'results/s01-tb.tiff', 
-       width = 12, height = 8, units = 'in', dpi = 450)
+ggsave(s01, filename = 'results/img/s01-tb.tiff', 
+       width = 12, height = 8, units = 'in', dpi = res)
 
 ## SUPPLEMENTAL FIGURE S02 ---------------------------------------------
 te_raw <- te %>%
@@ -120,11 +120,11 @@ te_fitted <- level1_preds_te %>%
   labs(x = 'hour', y = expr(hat(t)[e]))
 
 s02 <- grid.arrange(te_raw, te_fitted, nrow = 2)
-ggsave(s02, filename = 'results/s02-te.tiff', 
-       width = 12, height = 10, units = 'in', dpi = 450)
+ggsave(s02, filename = 'results/img/s02-te.tiff', 
+       width = 12, height = 10, units = 'in', dpi = res)
 
 
-## FIGURE 1 -------------------------------------------------
+## FIGURE 1 -----------------------------------------------------------
 
 # data grid for group level predictions
 level0_grid_df_tb <- data_grid(tb,
@@ -235,13 +235,14 @@ crit.val.te <- qnorm(1 - (0.05/8064)/2)
 
 # predictions by treatment (comparing location)
 te_pred <- level0_preds_te %>%
+  rename(exposure = treatment) |>
   ggplot(aes(x = hour,
              y = pred, 
-             group = interaction(day, location, treatment))) +
-  geom_path(aes(color = treatment), alpha = 0.4, linewidth = 0.2) +
+             group = interaction(day, location, exposure))) +
+  geom_path(aes(color = exposure), alpha = 0.4, linewidth = 0.2) +
   geom_ribbon(aes(ymin = pred - crit.val.te*se, 
                   ymax = pred + crit.val.te*se,
-                  fill = treatment),
+                  fill = exposure),
               alpha = 0.01) +
   facet_wrap(~location) +
   scale_y_continuous(n.breaks = 6, limits = c(-10, 70)) +
@@ -254,6 +255,138 @@ te_pred <- level0_preds_te %>%
   labs(x = 'hour', y = expr(hat(t)[e])) 
 
 f01 <- grid.arrange(tb_avg, tb_pred, te_avg, te_pred, nrow = 2)
-ggsave(f01, filename = 'results/fig1-te-tb.tiff', 
-       width = 12, height = 6, units = 'in', dpi = 450)
+ggsave(f01, filename = 'results/img/fig1-te-tb.tiff', 
+       width = 12, height = 6, units = 'in', dpi = res)
 
+## FIGURE 2 -----------------------------------------------------------
+
+tpref <- gradient |> 
+  ungroup() |> 
+  group_by(repro) |>
+  summarize(across(starts_with('tb'), mean)) |>
+  mutate(type = factor(repro, 
+                       levels = c('Pregnant', 'Non-Pregnant'),
+                       labels = c('G', 'N')),
+         location = factor(repro, 
+                           levels = c('Pregnant', 'Non-Pregnant'),
+                           labels = c('Rookery', 'Prairie'))) |>
+  dplyr::select(-repro)
+  
+db <- tb |>
+  left_join(tpref, by = 'type') |>
+  mutate(db.lo = temp - tb.q1,
+         db.hi = temp - tb.q3) |>
+  mutate(db = if_else(sign(db.lo)*sign(db.hi) == -1,
+                      0,
+                      if_else(sign(db.lo) == -1, 
+                              db.lo, 
+                              db.hi))) |>
+  dplyr::select(id, type, datetime, day, hour, db)
+
+db_avg <- db |>
+  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |> 
+  group_by(type, date = date(datetime), day, hour) |>
+  summarize(db = mean(db)) |>
+  ggplot(aes(x = hour, y = db, 
+             group = interaction(type, day))) +
+  geom_path(alpha = 0.05) +
+  geom_smooth(aes(x = hour, y = db),
+              method = 'loess', formula = 'y ~ x', 
+              inherit.aes = F, span = 0.3, se = F, n = 200) +
+  facet_wrap(~fct_rev(type), nrow = 1) +
+  scale_y_continuous(n.breaks = 6, limits = c(-20, 2)) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey', 
+                                          linewidth = 0.1)) +
+  labs(x = 'hour', y = expr(d[b])) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.15)
+
+level0_pred_df_db <- level0_pred_df_tb |>
+  left_join(tpref, by = 'type') |>
+  mutate(db.lo = pred - tb.q1,
+         db.hi = pred - tb.q3) |>
+  mutate(pred.db = if_else(sign(db.lo)*sign(db.hi) == -1,
+                      0,
+                      if_else(sign(db.lo) == -1, 
+                              db.lo, 
+                              db.hi))) |>
+  dplyr::select(type, datetime, day, hour, pred.db, se)
+
+db_pred <- level0_pred_df_db %>% 
+  arrange(type, day, hour) %>%
+  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
+         date = as.Date(day, origin = '2019-12-31')) %>%
+  ggplot(aes(x = hour, y = pred.db, 
+             group = interaction(type, day))) +
+  geom_path(aes(color = date), alpha = 0.5) +
+  facet_wrap(~fct_rev(type), nrow = 1) +
+  scale_y_continuous(n.breaks = 6, limits = c(-20, 2)) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey', 
+                                          linewidth = 0.1)) +
+  labs(x = 'hour', y = expr(hat(d)[b])) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.15)
+
+de <- te |>
+  left_join(tpref, by = 'location') |>
+  mutate(de.lo = temp - tb.q1,
+         de.hi = temp - tb.q3) |>
+  mutate(de = if_else(sign(de.lo)*sign(de.hi) == -1,
+                      0,
+                      if_else(sign(de.lo) == -1, 
+                              de.lo, 
+                              de.hi))) |>
+  dplyr::select(id, site, location, treatment, datetime, day, hour, de)
+
+de_avg <- de |>
+  group_by(location, treatment, hour, date = date(datetime)) |>
+  arrange(date, hour) |>
+  summarize(de = mean(de)) |>
+  ggplot(aes(x = hour, y = de, 
+             group = interaction(date, location, treatment))) +
+  geom_path(aes(color = treatment), alpha = 0.05) +
+  geom_smooth(aes(x = hour, y = de, color = treatment),
+              method = 'loess', formula = 'y ~ x', 
+              inherit.aes = F, span = 0.3, se = F, n = 200) +
+  facet_wrap(~location, nrow = 1) +
+  scale_y_continuous(n.breaks = 6, limits = c(-32, 40)) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey', 
+                                          linewidth = 0.1)) +
+  labs(x = 'hour', y = expr(d[e])) +
+  guides(color = guide_none()) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.15)
+
+level0_preds_de <- level0_preds_te |>
+  left_join(tpref, by = 'location') |>
+  mutate(de.lo = pred - tb.q1,
+         de.hi = pred - tb.q3) |>
+  mutate(pred.de = if_else(sign(de.lo)*sign(de.hi) == -1,
+                      0,
+                      if_else(sign(de.lo) == -1, 
+                              de.lo, 
+                              de.hi))) |>
+  dplyr::select(location, treatment, day, hour, pred.de)
+
+de_pred <- level0_preds_de %>%
+  rename(exposure = treatment) |>
+  ggplot(aes(x = hour,
+             y = pred.de, 
+             group = interaction(day, location, exposure))) +
+  geom_path(aes(color = exposure), alpha = 0.4, linewidth = 0.2) +
+  facet_wrap(~location) +
+  scale_y_continuous(n.breaks = 6, limits = c(-32, 40)) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1)) +
+  guides(color = guide_legend(override.aes = list(alpha = 0.4))) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
+  labs(x = 'hour', y = expr(hat(d)[e])) 
+
+f02 <- grid.arrange(db_avg, db_pred, de_avg, de_pred, nrow = 2)
+ggsave(f02, filename = 'results/img/fig2-de-db.tiff', 
+       width = 12, height = 6, units = 'in', dpi = res)
