@@ -233,7 +233,7 @@ level0_preds_te <- level0_grid_te %>%
 # bonferroni correction for confidence bands
 crit.val.te <- qnorm(1 - (0.05/8064)/2)
 
-# predictions by treatment (comparing location)
+# predictions by location
 te_pred <- level0_preds_te %>%
   rename(exposure = treatment) |>
   ggplot(aes(x = hour,
@@ -250,7 +250,7 @@ te_pred <- level0_preds_te %>%
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
                                           linewidth = 0.1)) +
-  guides(color = guide_legend(override.aes = list(alpha = 0.4))) +
+  guides(color = guide_legend(override.aes = list(alpha = 1))) +
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(t)[e])) 
 
@@ -383,7 +383,8 @@ de_pred <- level0_preds_de %>%
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
                                           linewidth = 0.1)) +
-  guides(color = guide_legend(override.aes = list(alpha = 0.4))) +
+  guides(color = guide_legend(override.aes = list(alpha = 1, 
+                                                  linewidth = 0.5))) +
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(d)[e])) 
 
