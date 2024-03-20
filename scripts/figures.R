@@ -5,6 +5,7 @@ library(fda)
 library(nlme)
 library(emmeans)
 library(gridExtra)
+library(patchwork)
 load('results/fit.RData')
 res <- 300
 
@@ -153,8 +154,9 @@ crit.val.tb <- qnorm(1 - (0.05/1344)/2)
 # estimated group means by hour*day
 tb_pred <- level0_pred_df_tb %>% 
   arrange(type, day, hour) %>%
-  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
+  mutate(type = factor(type, labels = c('Nonpregnant', 'Pregnant')),
          date = as.Date(day, origin = '2019-12-31')) %>%
+  mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
   ggplot(aes(x = hour, y = pred, 
              group = interaction(type, day))) +
   geom_ribbon(aes(ymin = pred - crit.val.tb*se,
@@ -254,7 +256,8 @@ te_pred <- level0_preds_te %>%
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(t)[e])) 
 
-f01 <- grid.arrange(tb_avg, tb_pred, te_avg, te_pred, nrow = 2)
+f01 <- tb_avg + tb_pred + te_avg + te_pred + plot_layout(nrow = 2)
+
 ggsave(f01, filename = 'results/img/fig1-te-tb.tiff', 
        width = 12, height = 6, units = 'in', dpi = res)
 
@@ -315,8 +318,9 @@ level0_pred_df_db <- level0_pred_df_tb |>
 
 db_pred <- level0_pred_df_db %>% 
   arrange(type, day, hour) %>%
-  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
+  mutate(type = factor(type, labels = c('Nonpregnant', 'Pregnant')),
          date = as.Date(day, origin = '2019-12-31')) %>%
+  mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
   ggplot(aes(x = hour, y = pred.db, 
              group = interaction(type, day))) +
   geom_path(aes(color = date), alpha = 0.5) +
@@ -388,6 +392,230 @@ de_pred <- level0_preds_de %>%
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(d)[e])) 
 
-f02 <- grid.arrange(db_avg, db_pred, de_avg, de_pred, nrow = 2)
+f02 <- db_avg + db_pred + de_avg + de_pred + plot_layout(nrow = 2)
+
 ggsave(f02, filename = 'results/img/fig2-de-db.tiff', 
        width = 12, height = 6, units = 'in', dpi = res)
+
+
+## FIGURE 3 -----------------------------------------------------------
+
+cut(0:23, breaks = c(0, 5, 9, 17, 21, 24), right = F) |> 
+  fct_other(keep = c('[0,5)', '[9,17)', '[21,24)'), other_level = 'transition') |>
+  fct_other(keep = c('transition', '[9,17)'), other_level = 'night') |>
+  fct_recode(day = '[9,17)')
+
+daytime_fn <- function(x){
+  out <- cut(x, breaks = c(0, 9, 17, 24), right = F) |> 
+    fct_other(keep = '[9,17)', other_level = 'night') |>
+    fct_recode(day = '[9,17)')
+  return(out)
+}
+
+daytime_fn_alt <- function(x){
+  out <- cut(x, breaks = c(0, 5, 9, 17, 21, 24), right = F) |> 
+    fct_other(keep = c('[0,5)', '[9,17)', '[21,24)'), other_level = 'transition') |>
+    fct_other(keep = c('transition', '[9,17)'), other_level = 'night') |>
+    fct_recode(day = '[9,17)')
+  return(out)
+}
+
+tb_timeofday <- tb |> 
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag),
+         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+  group_by(type, date = date.adj, daytime) |>
+  summarize(tb = mean(temp)) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = date, y = tb, linetype = type)) +
+  facet_wrap(~daytime) +
+  geom_path() +
+  labs(x = '', y = expression(paste('group average ', t[b], sep = ''))) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1)) +
+  guides(linetype = guide_none())
+
+tb_timeofday_avg <- tb |> 
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag),
+         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+  group_by(type, date = date.adj, daytime) |>
+  summarize(tb = mean(temp)) |>
+  group_by(type, daytime) |>
+  summarize(tb.avg = mean(tb),
+            tb.se = sd(tb)/sqrt(n())) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = daytime, y = tb.avg, shape = type)) +
+  geom_point() +
+  geom_linerange(aes(ymin = tb.avg - 5*tb.se, 
+                     ymax = tb.avg + 5*tb.se,
+                     linetype = type)) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(linetype = guide_legend(title = 'group'),
+         shape = guide_legend(title = 'group')) +
+  labs(x = '', y = expression(paste('group average ', t[b], sep = '')))
+
+te_timeofday <- te |>
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag)) |>
+  group_by(date = date.adj, location, treatment, daytime) |>
+  summarize(te = mean(temp)) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = date, y = te, linetype = location, color = treatment)) +
+  facet_wrap(~daytime) +
+  geom_path() +
+  labs(x = '', y = expression(paste('average ', t[e], sep = ''))) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1)) +
+  guides(linetype = guide_none(),
+         color = guide_none())
+
+te_timeofday_avg <- te |>
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag)) |>
+  group_by(date = date.adj, location, treatment, daytime) |>
+  summarize(te = mean(temp)) |>
+  group_by(location, treatment, daytime) |>
+  summarize(te.avg = mean(te),
+            te.se = sd(te)/sqrt(n())) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = daytime, y = te.avg, 
+             shape = location, 
+             linetype = location, 
+             color = treatment)) +
+  geom_point() +
+  geom_linerange(aes(ymin = te.avg - 5*te.se, 
+                     ymax = te.avg + 5*te.se,
+                     linetype = location)) +
+  facet_wrap(~treatment) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(title = 'exposure'),
+         shape = guide_legend(title = 'location'),
+         linetype = guide_legend(title = 'location')) +
+  labs(x = '', y = expression(paste('average ', t[e], sep = '')))
+
+f03 <- tb_timeofday + tb_timeofday_avg + 
+  te_timeofday + te_timeofday_avg + 
+  plot_layout(nrow = 2, widths = c(3, 1))
+
+ggsave(f03, filename = 'results/img/fig3-timeofday-te-tb.tiff', 
+       width = 12, height = 8, units = 'in', dpi = res)
+
+## FIGURE 4 -----------------------------------------------------------
+
+db_timeofday <- db |> 
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag),
+         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+  group_by(type, date = date.adj, daytime) |>
+  summarize(db = mean(db)) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = date, y = db, linetype = type)) +
+  facet_wrap(~daytime) +
+  geom_path() +
+  labs(x = '', y = expression(paste('group average ', d[b], sep = ''))) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1)) +
+  guides(linetype = guide_none()) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+
+db_timeofday_avg <- db |> 
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag),
+         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+  group_by(type, date = date.adj, daytime) |>
+  summarize(db = mean(db)) |>
+  group_by(type, daytime) |>
+  summarize(db.avg = mean(db),
+            db.se = sd(db)/sqrt(n())) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = daytime, y = db.avg, shape = type)) +
+  geom_point() +
+  geom_linerange(aes(ymin = db.avg - 5*db.se, 
+                     ymax = db.avg + 5*db.se,
+                     linetype = type)) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(linetype = guide_legend(title = 'group'),
+         shape = guide_legend(title = 'group')) +
+  labs(x = '', y = expression(paste('group average ', d[b], sep = ''))) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+
+de_timeofday <- de |>
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag)) |>
+  group_by(date = date.adj, location, treatment, daytime) |>
+  summarize(de = mean(de)) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = date, y = de, linetype = location, color = treatment)) +
+  facet_wrap(~daytime) +
+  geom_path() +
+  labs(x = '', y = expression(paste('average ', d[e], sep = ''))) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1)) +
+  guides(linetype = guide_none(),
+         color = guide_none()) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+
+de_timeofday_avg <- de |>
+  mutate(daytime = daytime_fn_alt(hour),
+         datetime.lag = datetime - hms('9:00:00'),
+         date.adj = date(datetime.lag)) |>
+  group_by(date = date.adj, location, treatment, daytime) |>
+  summarize(de = mean(de)) |>
+  group_by(location, treatment, daytime) |>
+  summarize(de.avg = mean(de),
+            de.se = sd(de)/sqrt(n())) |>
+  filter(daytime != 'transition') |>
+  ggplot(aes(x = daytime, y = de.avg, 
+             shape = location, 
+             linetype = location, 
+             color = treatment)) +
+  geom_point() +
+  geom_linerange(aes(ymin = de.avg - 5*de.se, 
+                     ymax = de.avg + 5*de.se,
+                     linetype = location)) +
+  facet_wrap(~treatment) +
+  theme_bw(base_size = 18) +
+  theme(panel.grid = element_blank(),
+        panel.grid.major.y = element_line(color = 'grey',
+                                          linewidth = 0.1),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  guides(color = guide_legend(title = 'exposure'),
+         shape = guide_legend(title = 'location'),
+         linetype = guide_legend(title = 'location')) +
+  labs(x = '', y = expression(paste('average ', d[e], sep = ''))) +
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+
+f04 <- db_timeofday + db_timeofday_avg +
+  de_timeofday + de_timeofday_avg +
+  plot_layout(nrow = 2, widths = c(3, 1))
+
+ggsave(f04, filename = 'results/img/fig4-timeofday-de-db.tiff', 
+       width = 12, height = 8, units = 'in', dpi = res)
