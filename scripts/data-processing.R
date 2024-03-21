@@ -78,12 +78,14 @@ te_raw %>% group_by(id) %>% count()
 
 # plot
 te_raw %>%
+  filter(site != 'Entrance') |>
   ggplot(aes(x = datetime, y = temp, color = treatment)) +
   facet_wrap(~location*site, nrow = 2) +
   geom_path(alpha = 0.5)
 
 # add day and hour variables
 te <- te_raw %>%
+  filter(site != 'Entrance') |>
   mutate(day = yday(datetime),
          hour = hour(datetime))
 

@@ -67,7 +67,7 @@ tb_fitted <- tb_level1_pred_df |>
   labs(x = 'hour', y = expr(hat(t)[b])) +
   guides(color = guide_colorbar(title = 'date'))
 
-s01 <- gridExtra::grid.arrange(tb_raw, tb_fitted, nrow = 2)
+s01 <- tb_raw + tb_fitted + plot_layout(nrow = 2)
 ggsave(s01, filename = 'results/img/s01-tb.tiff', 
        width = 12, height = 8, units = 'in', dpi = res)
 
@@ -105,6 +105,7 @@ level1_preds_te <- level1_grid_te %>%
 # fitted values by hour*day*location*site
 te_fitted <- level1_preds_te %>%
   rename(exposure = treatment) |>
+  # mutate(exposure = fct_relevel(factor(exposure), c('Shaded', 'Exposed'))) |>
   ggplot(aes(x = hour, 
              y = pred,
              group = interaction(id, day, exposure), 
@@ -120,7 +121,7 @@ te_fitted <- level1_preds_te %>%
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(t)[e]))
 
-s02 <- grid.arrange(te_raw, te_fitted, nrow = 2)
+s02 <- te_raw + te_fitted + plot_layout(nrow = 2)
 ggsave(s02, filename = 'results/img/s02-te.tiff', 
        width = 12, height = 10, units = 'in', dpi = res)
 
@@ -156,7 +157,7 @@ tb_pred <- level0_pred_df_tb %>%
   arrange(type, day, hour) %>%
   mutate(type = factor(type, labels = c('Nonpregnant', 'Pregnant')),
          date = as.Date(day, origin = '2019-12-31')) %>%
-  mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
+  # mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
   ggplot(aes(x = hour, y = pred, 
              group = interaction(type, day))) +
   geom_ribbon(aes(ymin = pred - crit.val.tb*se,
@@ -238,6 +239,7 @@ crit.val.te <- qnorm(1 - (0.05/8064)/2)
 # predictions by location
 te_pred <- level0_preds_te %>%
   rename(exposure = treatment) |>
+  # mutate(exposure = fct_relevel(factor(exposure), c('Shaded', 'Exposed'))) |>
   ggplot(aes(x = hour,
              y = pred, 
              group = interaction(day, location, exposure))) +
@@ -256,7 +258,7 @@ te_pred <- level0_preds_te %>%
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(t)[e])) 
 
-f01 <- tb_avg + tb_pred + te_avg + te_pred + plot_layout(nrow = 2)
+f01 <- te_avg + te_pred + tb_avg + tb_pred + plot_layout(nrow = 2)
 
 ggsave(f01, filename = 'results/img/fig1-te-tb.tiff', 
        width = 12, height = 6, units = 'in', dpi = res)
@@ -320,7 +322,7 @@ db_pred <- level0_pred_df_db %>%
   arrange(type, day, hour) %>%
   mutate(type = factor(type, labels = c('Nonpregnant', 'Pregnant')),
          date = as.Date(day, origin = '2019-12-31')) %>%
-  mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
+  # mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
   ggplot(aes(x = hour, y = pred.db, 
              group = interaction(type, day))) +
   geom_path(aes(color = date), alpha = 0.5) +
@@ -377,6 +379,7 @@ level0_preds_de <- level0_preds_te |>
 
 de_pred <- level0_preds_de %>%
   rename(exposure = treatment) |>
+  # mutate(exposure = fct_relevel(factor(exposure), c('Shaded', 'Exposed'))) |>
   ggplot(aes(x = hour,
              y = pred.de, 
              group = interaction(day, location, exposure))) +
@@ -392,7 +395,7 @@ de_pred <- level0_preds_de %>%
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
   labs(x = 'hour', y = expr(hat(d)[e])) 
 
-f02 <- db_avg + db_pred + de_avg + de_pred + plot_layout(nrow = 2)
+f02 <- de_avg + de_pred + db_avg + db_pred + plot_layout(nrow = 2)
 
 ggsave(f02, filename = 'results/img/fig2-de-db.tiff', 
        width = 12, height = 6, units = 'in', dpi = res)
@@ -510,8 +513,8 @@ te_timeofday_avg <- te |>
          linetype = guide_legend(title = 'location')) +
   labs(x = '', y = expression(paste('average ', t[e], sep = '')))
 
-f03 <- tb_timeofday + tb_timeofday_avg + 
-  te_timeofday + te_timeofday_avg + 
+f03 <- te_timeofday + te_timeofday_avg + 
+  tb_timeofday + tb_timeofday_avg + 
   plot_layout(nrow = 2, widths = c(3, 1))
 
 ggsave(f03, filename = 'results/img/fig3-timeofday-te-tb.tiff', 
@@ -613,8 +616,8 @@ de_timeofday_avg <- de |>
   labs(x = '', y = expression(paste('average ', d[e], sep = ''))) +
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
 
-f04 <- db_timeofday + db_timeofday_avg +
-  de_timeofday + de_timeofday_avg +
+f04 <- de_timeofday + de_timeofday_avg +
+  db_timeofday + db_timeofday_avg +
   plot_layout(nrow = 2, widths = c(3, 1))
 
 ggsave(f04, filename = 'results/img/fig4-timeofday-de-db.tiff', 
