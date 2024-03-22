@@ -439,7 +439,8 @@ tb_timeofday <- tb |>
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
                                           linewidth = 0.1)) +
-  guides(linetype = guide_none())
+  guides(linetype = guide_none()) +
+  scale_y_continuous(limits = c(15, 32), n.breaks = 4)
 
 tb_timeofday_avg <- tb |> 
   mutate(daytime = daytime_fn_alt(hour),
@@ -453,10 +454,12 @@ tb_timeofday_avg <- tb |>
             tb.se = sd(tb)/sqrt(n())) |>
   filter(daytime != 'transition') |>
   ggplot(aes(x = daytime, y = tb.avg, shape = type)) +
-  geom_point() +
-  geom_linerange(aes(ymin = tb.avg - 5*tb.se, 
-                     ymax = tb.avg + 5*tb.se,
-                     linetype = type)) +
+  geom_point(position = position_dodge(width = 0.3)) +
+  geom_errorbar(aes(ymin = tb.avg - 8*tb.se, 
+                     ymax = tb.avg + 8*tb.se,
+                     linetype = type),
+                width = 0.2,
+                position = position_dodge(width = 0.3)) +
   theme_bw(base_size = 18) +
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
@@ -464,9 +467,14 @@ tb_timeofday_avg <- tb |>
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
   guides(linetype = guide_legend(title = 'group'),
          shape = guide_legend(title = 'group')) +
-  labs(x = '', y = expression(paste('group average ', t[b], sep = '')))
+  labs(x = '', y = expression(paste('group average ', t[b], sep = ''))) +
+  scale_y_continuous(limits = c(15, 32), n.breaks = 4)
+
+tb_dates <- tb |> pull(datetime) |> date() |> range()
 
 te_timeofday <- te |>
+  filter(date(datetime) >= tb_dates[1],
+         date(datetime) <= tb_dates[2]) |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag)) |>
@@ -482,9 +490,12 @@ te_timeofday <- te |>
         panel.grid.major.y = element_line(color = 'grey',
                                           linewidth = 0.1)) +
   guides(linetype = guide_none(),
-         color = guide_none())
+         color = guide_none()) +
+  scale_y_continuous(limits = c(0, 55), n.breaks = 6)
 
 te_timeofday_avg <- te |>
+  filter(date(datetime) >= tb_dates[1],
+         date(datetime) <= tb_dates[2]) |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag)) |>
@@ -498,11 +509,13 @@ te_timeofday_avg <- te |>
              shape = location, 
              linetype = location, 
              color = treatment)) +
-  geom_point() +
-  geom_linerange(aes(ymin = te.avg - 5*te.se, 
-                     ymax = te.avg + 5*te.se,
-                     linetype = location)) +
-  facet_wrap(~treatment) +
+  geom_point(position = position_dodge(width = 0.3)) +
+  geom_errorbar(aes(ymin = te.avg - 8*te.se, 
+                     ymax = te.avg + 8*te.se,
+                     linetype = location),
+                width = 0.2,
+                position = position_dodge(width = 0.3)) +
+  # facet_wrap(~treatment) +
   theme_bw(base_size = 18) +
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
@@ -511,7 +524,8 @@ te_timeofday_avg <- te |>
   guides(color = guide_legend(title = 'exposure'),
          shape = guide_legend(title = 'location'),
          linetype = guide_legend(title = 'location')) +
-  labs(x = '', y = expression(paste('average ', t[e], sep = '')))
+  labs(x = '', y = expression(paste('average ', t[e], sep = ''))) +
+  scale_y_continuous(limits = c(0, 55), n.breaks = 6)
 
 f03 <- te_timeofday + te_timeofday_avg + 
   tb_timeofday + tb_timeofday_avg + 
@@ -539,7 +553,8 @@ db_timeofday <- db |>
         panel.grid.major.y = element_line(color = 'grey',
                                           linewidth = 0.1)) +
   guides(linetype = guide_none()) +
-  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1) +
+  scale_y_continuous(limits = c(-16, 1), n.breaks = 4)
 
 db_timeofday_avg <- db |> 
   mutate(daytime = daytime_fn_alt(hour),
@@ -553,10 +568,12 @@ db_timeofday_avg <- db |>
             db.se = sd(db)/sqrt(n())) |>
   filter(daytime != 'transition') |>
   ggplot(aes(x = daytime, y = db.avg, shape = type)) +
-  geom_point() +
-  geom_linerange(aes(ymin = db.avg - 5*db.se, 
-                     ymax = db.avg + 5*db.se,
-                     linetype = type)) +
+  geom_point(position = position_dodge(width = 0.3)) +
+  geom_errorbar(aes(ymin = db.avg - 8*db.se, 
+                     ymax = db.avg + 8*db.se,
+                     linetype = type),
+                width = 0.2,
+                position = position_dodge(width = 0.3)) +
   theme_bw(base_size = 18) +
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
@@ -565,9 +582,12 @@ db_timeofday_avg <- db |>
   guides(linetype = guide_legend(title = 'group'),
          shape = guide_legend(title = 'group')) +
   labs(x = '', y = expression(paste('group average ', d[b], sep = ''))) +
-  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)  +
+  scale_y_continuous(limits = c(-16, 1), n.breaks = 4)
 
 de_timeofday <- de |>
+  filter(date(datetime) >= tb_dates[1],
+         date(datetime) <= tb_dates[2]) |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag)) |>
@@ -584,9 +604,12 @@ de_timeofday <- de |>
                                           linewidth = 0.1)) +
   guides(linetype = guide_none(),
          color = guide_none()) +
-  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)  +
+  scale_y_continuous(limits = c(-30, 25), n.breaks = 6)
 
 de_timeofday_avg <- de |>
+  filter(date(datetime) >= tb_dates[1],
+         date(datetime) <= tb_dates[2]) |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag)) |>
@@ -600,11 +623,13 @@ de_timeofday_avg <- de |>
              shape = location, 
              linetype = location, 
              color = treatment)) +
-  geom_point() +
-  geom_linerange(aes(ymin = de.avg - 5*de.se, 
+  geom_point(position = position_dodge(width = 0.3)) +
+  geom_errorbar(aes(ymin = de.avg - 5*de.se, 
                      ymax = de.avg + 5*de.se,
-                     linetype = location)) +
-  facet_wrap(~treatment) +
+                     linetype = location),
+                 width = 0.2,
+                 position = position_dodge(width = 0.3)) +
+  # facet_wrap(~treatment) +
   theme_bw(base_size = 18) +
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'grey',
@@ -614,7 +639,8 @@ de_timeofday_avg <- de |>
          shape = guide_legend(title = 'location'),
          linetype = guide_legend(title = 'location')) +
   labs(x = '', y = expression(paste('average ', d[e], sep = ''))) +
-  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)
+  geom_hline(yintercept = 0, color = 'black', linewidth = 0.1)  +
+  scale_y_continuous(limits = c(-30, 25), n.breaks = 6)
 
 f04 <- de_timeofday + de_timeofday_avg +
   db_timeofday + db_timeofday_avg +
