@@ -6,8 +6,15 @@ library(nlme)
 library(emmeans)
 library(gridExtra)
 library(patchwork)
+
 load('results/fit.RData')
+path <- 'results/img/'
+
+# load('results/fit-withentrance.RData')
+# path <- 'results/img/with-entrance/'
+
 res <- 300
+ext <- '.tiff'
 
 ## SUPPLEMENTAL FIGURE S01 -------------------------------------------------
 
@@ -68,7 +75,7 @@ tb_fitted <- tb_level1_pred_df |>
   guides(color = guide_colorbar(title = 'date'))
 
 s01 <- tb_raw + tb_fitted + plot_layout(nrow = 2)
-ggsave(s01, filename = 'results/img/s01-tb.tiff', 
+ggsave(s01, filename = paste(path, 's01-tb', ext, sep = ''), 
        width = 12, height = 8, units = 'in', dpi = res)
 
 ## SUPPLEMENTAL FIGURE S02 ---------------------------------------------
@@ -122,7 +129,7 @@ te_fitted <- level1_preds_te %>%
   labs(x = 'hour', y = expr(hat(t)[e]))
 
 s02 <- te_raw + te_fitted + plot_layout(nrow = 2)
-ggsave(s02, filename = 'results/img/s02-te.tiff', 
+ggsave(s02, filename = paste(path, 's02-te', ext, sep = ''), 
        width = 12, height = 10, units = 'in', dpi = res)
 
 
@@ -155,9 +162,8 @@ crit.val.tb <- qnorm(1 - (0.05/1344)/2)
 # estimated group means by hour*day
 tb_pred <- level0_pred_df_tb %>% 
   arrange(type, day, hour) %>%
-  mutate(type = factor(type, labels = c('Nonpregnant', 'Pregnant')),
+  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
          date = as.Date(day, origin = '2019-12-31')) %>%
-  # mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
   ggplot(aes(x = hour, y = pred, 
              group = interaction(type, day))) +
   geom_ribbon(aes(ymin = pred - crit.val.tb*se,
@@ -260,7 +266,7 @@ te_pred <- level0_preds_te %>%
 
 f01 <- te_avg + te_pred + tb_avg + tb_pred + plot_layout(nrow = 2)
 
-ggsave(f01, filename = 'results/img/fig1-te-tb.tiff', 
+ggsave(f01, filename = paste(path, 'fig1-te-tb', ext, sep = ''), 
        width = 12, height = 6, units = 'in', dpi = res)
 
 ## FIGURE 2 -----------------------------------------------------------
@@ -320,7 +326,7 @@ level0_pred_df_db <- level0_pred_df_tb |>
 
 db_pred <- level0_pred_df_db %>% 
   arrange(type, day, hour) %>%
-  mutate(type = factor(type, labels = c('Nonpregnant', 'Pregnant')),
+  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
          date = as.Date(day, origin = '2019-12-31')) %>%
   # mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
   ggplot(aes(x = hour, y = pred.db, 
@@ -397,7 +403,7 @@ de_pred <- level0_preds_de %>%
 
 f02 <- de_avg + de_pred + db_avg + db_pred + plot_layout(nrow = 2)
 
-ggsave(f02, filename = 'results/img/fig2-de-db.tiff', 
+ggsave(f02, filename = paste(path, 'fig2-de-db', ext, sep = ''), 
        width = 12, height = 6, units = 'in', dpi = res)
 
 
@@ -531,7 +537,7 @@ f03 <- te_timeofday + te_timeofday_avg +
   tb_timeofday + tb_timeofday_avg + 
   plot_layout(nrow = 2, widths = c(3, 1))
 
-ggsave(f03, filename = 'results/img/fig3-timeofday-te-tb.tiff', 
+ggsave(f03, filename = paste(path, 'fig3-timeofday-te-tb', ext, sep = ''), 
        width = 12, height = 8, units = 'in', dpi = res)
 
 ## FIGURE 4 -----------------------------------------------------------
@@ -646,5 +652,5 @@ f04 <- de_timeofday + de_timeofday_avg +
   db_timeofday + db_timeofday_avg +
   plot_layout(nrow = 2, widths = c(3, 1))
 
-ggsave(f04, filename = 'results/img/fig4-timeofday-de-db.tiff', 
+ggsave(f04, filename = paste(path, 'fig4-timeofday-de-db', ext, sep = ''), 
        width = 12, height = 8, units = 'in', dpi = res)
