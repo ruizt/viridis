@@ -52,7 +52,5 @@ fit_te <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
 ## EXPORT ENVIRONMENT
 ######################
 
-# save fitted models
-# saveRDS(fit_te, file = 'results/fit-te.rds')
-# saveRDS(fit_tb, file = 'results/fit-tb.rds')
+# not storing properly, environment issue
 save.image(file = 'results/fit.RData')
