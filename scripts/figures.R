@@ -4,7 +4,6 @@ library(modelr)
 library(fda)
 library(nlme)
 library(emmeans)
-library(gridExtra)
 library(patchwork)
 source('scripts/model-fitting.R')
 path <- 'results/img/'
