@@ -563,7 +563,8 @@ db_timeofday <- db |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+         type = fct_relevel(factor(type, labels = c('Pregnant', 'Nonpregnant')), 
+                            "Nonpregnant", "Pregnant")) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(db = mean(db)) |>
   filter(daytime != 'transition') |>
@@ -583,7 +584,8 @@ db_timeofday_avg <- db |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+         type = fct_relevel(factor(type, labels = c('Pregnant', 'Nonpregnant')),
+                            "Nonpregnant", "Pregnant")) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(db = mean(db)) |>
   group_by(type, daytime) |>
