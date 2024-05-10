@@ -5,11 +5,16 @@ library(fda)
 library(nlme)
 library(emmeans)
 library(patchwork)
-source('scripts/model-fitting.R')
+library(pander)
+
+source('scripts/model-fitting.R') # long run time
+
+# export path and resolution for figures
 path <- 'results/img/'
 res <- 500
 ext <- '.tiff'
 
+# summary of gradient data for use in db/de figures
 tpref <- gradient |> 
   ungroup() |> 
   group_by(repro) |>
@@ -21,6 +26,83 @@ tpref <- gradient |>
                            levels = c('Pregnant', 'Non-Pregnant'),
                            labels = c('Rookery', 'Prairie'))) |>
   dplyr::select(-repro)
+
+## TABLE 1 ------------------------------------------------------------
+group_means_te <- emmeans(fit_te, ~ location*treatment) |>
+  as_tibble() |>
+  rename(Location = location,
+         Exposure = treatment,
+         Estimate = emmean) |>
+  mutate(CI = paste('(', round(lower.CL, 2), 
+                    ', ', round(upper.CL, 2), ')')) |>
+  dplyr::select(Location, Exposure, Estimate, SE, CI) 
+
+contr_location_te <- emmeans(fit_te, ~ location) |>
+  pairs() |> confint() |>
+  rename(Group = contrast,
+         Estimate = estimate) |>
+  mutate(CI = paste('(', round(lower.CL, 2), 
+                    ', ', round(upper.CL, 2), ')')) |>
+  dplyr::select(Group, Estimate, SE, CI)
+
+contr_exposure_te <- emmeans(fit_te, ~ treatment) |>
+  pairs() |> confint() |>
+  rename(Group = contrast,
+         Estimate = estimate) |>
+  mutate(CI = paste('(', round(lower.CL, 2), 
+                    ', ', round(upper.CL, 2), ')')) |>
+  dplyr::select(Group, Estimate, SE, CI)
+
+group_means_te |>
+  unite(col = 'Group', c(Location, Exposure), sep = ', ') |>
+  bind_rows(contr_location_te, contr_exposure_te) |>
+  write_csv(file = 'results/tbl/tbl1-te-means.csv')
+
+## TABLE 2 ------------------------------------------------------------
+fit_emm_tb <- emmeans(fit_tb, specs = 'type')
+
+group_means_tb <- summary(fit_emm_tb) |>
+  tibble() |>
+  rename(Group = type, 
+         Estimate = emmean) |>
+  mutate(CI = paste('(', round(lower.CL, 2), 
+                    ', ', round(upper.CL, 2), ')')) |>
+  dplyr::select(Group, Estimate, SE, CI)
+
+contrasts_tb <- pairs(fit_emm_tb) |> 
+  confint() |> 
+  tibble() |>
+  rename(Group = contrast, 
+         Estimate = estimate) |>
+  mutate(CI = paste('(', round(lower.CL, 2), 
+                    ', ', round(upper.CL, 2), ')')) |>
+  dplyr::select(Group, Estimate, SE, CI) 
+
+bind_rows(group_means_tb, contrasts_tb) |>
+  write_csv(file = 'results/tbl/tbl2-tb-means.csv')
+
+## TABLE S01 ------------------------------------------------------------
+anova_te <- anova(fit_te, type = 'sequential')[-1,] 
+rownames(anova_te) <- c('Location', 'Exposure',
+                        'Hour', 'Day', 'Location:Exposure',
+                        'Location:Hour', 'Exposure:Hour',
+                        'Location:Day', 'Exposure:Day',
+                        'Hour:Day', 'Location:Exposure:Hour',
+                        'Location:Exposure:Day',
+                        'Location:Hour:Day',
+                        'Exposure:Hour:Day',
+                        'Location:Exposure:Hour:Day')
+
+anova_te |>
+  rownames_to_column(var = 'Term') |>
+  write_csv(file = 'results/tbl/tbls01-te-anova.csv')
+
+## TABLE S02 ------------------------------------------------------------
+anova_tb <- anova(fit_tb, type = 'sequential')[-1,] 
+rownames(anova_tb) <- c('Group', 'Hour', 'Day', 'Group:Hour', 'Group:Day', 'Hour:Day', 'Group:Hour:Day')
+anova_tb |>
+  rownames_to_column(var = 'Term') |>
+  write_csv(file = 'results/tbl/tbls02-tb-anova.csv')
 
 ## SUPPLEMENTAL FIGURE S01 -------------------------------------------------
 
@@ -673,7 +755,7 @@ f04 <- de_timeofday + de_timeofday_avg +
 ggsave(f04, filename = paste(path, 'fig4-timeofday-de-db', ext, sep = ''), 
        width = 8, height = 5, units = 'in', dpi = res)
 
-## ADDITIONAL SUMMARIES --------------------------------------------------------
+## ADDITIONAL SUMMARIES APPEARING IN BODY -----------------------------
 
 de |>
   filter(date(datetime) >= tb_dates[1],

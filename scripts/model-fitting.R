@@ -52,5 +52,5 @@ fit_te <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
 ## EXPORT ENVIRONMENT
 ######################
 
-# not storing properly, environment issue
-save.image(file = 'results/fit.RData')
+# # not storing properly due to environment issue with nlme package
+# save.image(file = 'results/fit.RData')
