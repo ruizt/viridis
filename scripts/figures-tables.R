@@ -10,7 +10,7 @@ library(pander)
 source('scripts/model-fitting.R') # long run time
 
 # export path and resolution for figures
-path <- 'results/img/'
+path <- '_results/img/'
 res <- 500
 ext <- '.tiff'
 
@@ -113,7 +113,7 @@ tb_raw <- tb |>
   mutate(newid = row_number()) |>
   right_join(tb) |>
   mutate(type = factor(type, levels = c('G', 'N'), 
-                       labels = c('Pregnant', 'Nonpregnant'))) |>
+                       labels = c('Pregnant', 'Non-pregnant'))) |>
   ggplot(aes(x = hour, 
              y = temp, 
              color = date(datetime),
@@ -149,7 +149,7 @@ tb_fitted <- tb_level1_pred_df |>
   mutate(newid = row_number()) |>
   right_join(tb_level1_pred_df) |>
   mutate(type = factor(type, levels = c('G', 'N'), 
-                       labels = c('Pregnant', 'Nonpregnant'))) |>
+                       labels = c('Pregnant', 'Non-pregnant'))) |>
   ggplot(aes(x = hour, y = pred, 
              group = interaction(id, day), 
              color = as.Date(day, origin = '2019-12-31'))) +
@@ -162,9 +162,9 @@ tb_fitted <- tb_level1_pred_df |>
   labs(x = 'Hour', y = expr(paste('Estimated ', hat(T)[b], ' (\u00B0C)', sep = ' '))) +
   guides(color = guide_colorbar(title = 'Date'))
 
-s01 <- tb_raw + tb_fitted + plot_layout(nrow = 2)
+s01 <- tb_raw + tb_fitted + plot_layout(nrow = 2) + plot_annotation(tag_levels = 'A')
 ggsave(s01, filename = paste(path, 's01-tb', ext, sep = ''), 
-       width = 8, height = 5, units = 'in', dpi = res)
+       width = 8, height = 5.5, units = 'in', dpi = res)
 
 ## SUPPLEMENTAL FIGURE S02 ---------------------------------------------
 te_raw <- te |>
@@ -181,7 +181,7 @@ te_raw <- te |>
         panel.grid.major.y = element_line(color = 'black',
                                           linewidth = 0.2)) +
   labs(x = 'Hour', y = expr(paste('Observed ', T[e], ' (\u00B0C)'))) +
-  guides(color = guide_legend(title = '', override.aes = list(alpha = 1))) +
+  guides(color = guide_legend(title = '', override.aes = list(alpha = 1, lwd = 0.5))) +
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.2)
 
 # data grid for individual level predictions
@@ -212,11 +212,11 @@ te_fitted <- level1_preds_te |>
   theme(panel.grid = element_blank(),
         panel.grid.major.y = element_line(color = 'black',
                                           linewidth = 0.2)) +
-  guides(color = guide_legend(title = '', override.aes = list(alpha = 1))) +
+  guides(color = guide_legend(title = '', override.aes = list(alpha = 1, lwd = 0.5))) +
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.2) +
   labs(x = 'Hour', y = expr(paste('Estimated ', hat(T)[e], ' (\u00B0C)')))
 
-s02 <- te_raw + te_fitted + plot_layout(nrow = 2)
+s02 <- te_raw + te_fitted + plot_layout(nrow = 2) + plot_annotation(tag_levels = 'A')
 ggsave(s02, filename = paste(path, 's02-te', ext, sep = ''), 
        width = 6, height = 6, units = 'in', dpi = res)
 
@@ -251,7 +251,7 @@ crit.val.tb <- qnorm(1 - (0.05/1344)/2)
 tb_pred <- level0_pred_df_tb |> 
   left_join(tpref, by = 'type') |>
   arrange(type, day, hour) |>
-  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
+  mutate(type = factor(type, labels = c('Pregnant', 'Non-pregnant')),
          date = as.Date(day, origin = '2019-12-31')) |>
   ggplot(aes(x = hour, y = pred, 
              group = interaction(type, day))) +
@@ -276,7 +276,7 @@ tb_pred <- level0_pred_df_tb |>
 
 tb_avg <- tb |>
   left_join(tpref, by = 'type') |>
-  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |> 
+  mutate(type = factor(type, labels = c('Pregnant', 'Non-pregnant'))) |> 
   group_by(type, date = date(datetime), day, hour) |>
   summarize(temp = mean(temp),
             tb.q1 = unique(tb.q1),
@@ -372,7 +372,7 @@ te_pred <- level0_preds_te |>
          color = guide_legend(title = '', override.aes = list(alpha = 1,
                                                               linewidth = 1)))
 
-f01 <- te_avg + te_pred + tb_avg + tb_pred + plot_layout(nrow = 2)
+f01 <- te_avg + te_pred + tb_avg + tb_pred + plot_layout(nrow = 2) + plot_annotation(tag_levels = 'A')
 
 ggsave(f01, filename = paste(path, 'fig1-te-tb', ext, sep = ''), 
        width = 7.5, height = 4, units = 'in', dpi = res)
@@ -391,7 +391,7 @@ db <- tb |>
   dplyr::select(id, type, datetime, day, hour, db)
 
 db_avg <- db |>
-  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |> 
+  mutate(type = factor(type, labels = c('Pregnant', 'Non-pregnant'))) |> 
   group_by(type, date = date(datetime), day, hour) |>
   summarize(db = mean(db)) |>
   ggplot(aes(x = hour, y = db, 
@@ -422,9 +422,9 @@ level0_pred_df_db <- level0_pred_df_tb |>
 
 db_pred <- level0_pred_df_db |> 
   arrange(type, day, hour) |>
-  mutate(type = factor(type, labels = c('Pregnant', 'Nonpregnant')),
+  mutate(type = factor(type, labels = c('Pregnant', 'Non-pregnant')),
          date = as.Date(day, origin = '2019-12-31')) |>
-  # mutate(type = fct_relevel(type, c('Pregnant', 'Nonpregnant'))) |>
+  # mutate(type = fct_relevel(type, c('Pregnant', 'Non-pregnant'))) |>
   ggplot(aes(x = hour, y = pred.db, 
              group = interaction(type, day))) +
   geom_path(aes(color = date), alpha = 0.5) +
@@ -499,7 +499,7 @@ de_pred <- level0_preds_de |>
   geom_hline(yintercept = 0, color = 'black', linewidth = 0.5) +
   labs(x = 'Hour', y = expr(paste('Estimated ', hat(d)[e]))) 
 
-f02 <- de_avg + de_pred + db_avg + db_pred + plot_layout(nrow = 2)
+f02 <- de_avg + de_pred + db_avg + db_pred + plot_layout(nrow = 2) + plot_annotation(tag_levels = 'A')
 
 ggsave(f02, filename = paste(path, 'fig2-de-db', ext, sep = ''), 
        width = 7.5, height = 4, units = 'in', dpi = res)
@@ -531,7 +531,7 @@ tb_timeofday <- tb |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+         type = factor(type, labels = c('Pregnant', 'Non-pregnant'))) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(tb = mean(temp)) |>
   filter(daytime != 'transition') |>
@@ -550,7 +550,7 @@ tb_timeofday_avg <- tb |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+         type = factor(type, labels = c('Pregnant', 'Non-pregnant'))) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(tb = mean(temp)) |>
   group_by(type, daytime) |>
@@ -633,7 +633,8 @@ te_timeofday_avg <- te |>
 
 f03 <- te_timeofday + te_timeofday_avg + 
   tb_timeofday + tb_timeofday_avg + 
-  plot_layout(nrow = 2, widths = c(3, 1))
+  plot_layout(nrow = 2, widths = c(3, 1)) +
+  plot_annotation(tag_levels = 'A')
 
 ggsave(f03, filename = paste(path, 'fig3-timeofday-te-tb', ext, sep = ''), 
        width = 8, height = 5, units = 'in', dpi = res)
@@ -644,8 +645,8 @@ db_timeofday <- db |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = fct_relevel(factor(type, labels = c('Pregnant', 'Nonpregnant')), 
-                            "Nonpregnant", "Pregnant")) |>
+         type = fct_relevel(factor(type, labels = c('Pregnant', 'Non-pregnant')), 
+                            "Non-pregnant", "Pregnant")) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(db = mean(db)) |>
   filter(daytime != 'transition') |>
@@ -665,8 +666,8 @@ db_timeofday_avg <- db |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = fct_relevel(factor(type, labels = c('Pregnant', 'Nonpregnant')),
-                            "Nonpregnant", "Pregnant")) |>
+         type = fct_relevel(factor(type, labels = c('Pregnant', 'Non-pregnant')),
+                            "Non-pregnant", "Pregnant")) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(db = mean(db)) |>
   group_by(type, daytime) |>
@@ -750,7 +751,8 @@ de_timeofday_avg <- de |>
 
 f04 <- de_timeofday + de_timeofday_avg +
   db_timeofday + db_timeofday_avg +
-  plot_layout(nrow = 2, widths = c(3, 1))
+  plot_layout(nrow = 2, widths = c(3, 1)) +
+  plot_annotation(tag_levels = 'A')
 
 ggsave(f04, filename = paste(path, 'fig4-timeofday-de-db', ext, sep = ''), 
        width = 8, height = 5, units = 'in', dpi = res)
@@ -816,12 +818,12 @@ db |>
   mutate(daytime = daytime_fn_alt(hour),
          datetime.lag = datetime - hms('9:00:00'),
          date.adj = date(datetime.lag),
-         type = factor(type, labels = c('Pregnant', 'Nonpregnant'))) |>
+         type = factor(type, labels = c('Pregnant', 'Non-pregnant'))) |>
   group_by(type, date = date.adj, daytime) |>
   summarize(db = mean(db)) |>
   group_by(type, daytime) |>
   summarize(db.avg = mean(db)) |>
   filter(daytime != 'transition') |>
   pivot_wider(names_from = type, values_from = db.avg) |>
-  mutate(diff = Pregnant - Nonpregnant) |>
+  mutate(diff = Pregnant - Non-pregnant) |>
   write_csv('results/tbl/db-tbl.csv')
