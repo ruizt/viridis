@@ -5,7 +5,7 @@ library(lubridate)
 #########################
 
 # read in
-tb_raw <- list.files(path = "data/raw/For_R_Analysis_Amended", 
+tb_raw <- list.files(path = "data/_raw/For_R_Analysis_Amended", 
                    full.names = TRUE) %>%
   lapply(read_csv) %>%
   bind_rows %>%
@@ -58,7 +58,7 @@ tb <- tb_raw %>%
   dplyr::select(id, type, datetime, day, hour, temp)
 
 # export csv
-write_csv(tb, file = 'data/tb.csv')
+write_csv(tb, file = 'data/_csv/tb.csv')
 
 ## Te data processing
 ######################
@@ -90,7 +90,7 @@ te <- te_raw %>%
          hour = hour(datetime))
 
 # export csv
-write_csv(te, file = 'data/te.csv')
+write_csv(te, file = 'data/_csv/te.csv')
 
 
 ## gradient data processing
@@ -125,7 +125,7 @@ gradient <- gradient_raw |>
             n.obs = n())
 
 # export csv
-write_csv(gradient, file = 'data/gradient.csv')
+write_csv(gradient, file = 'data/_csv/gradient.csv')
 
 # write r binary file
 save(list = c('gradient', 'tb', 'te'), file = 'data/viridis-data.RData')

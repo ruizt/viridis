@@ -4,7 +4,7 @@ library(modelr)
 library(fda)
 library(nlme)
 options(contrasts = rep('contr.sum', 2))
-load('data/viridis-data.RData')
+load('viridis-data.RData')
 
 ## BODY TEMPERATURES (Tb)
 ##########################
@@ -48,9 +48,3 @@ fit_te <- lme(fixed = temp ~ location*treatment*fb.hour*fb.day,
            random = reSt_te,
            correlation = corSt_te,
            data = te_gr)
-
-## EXPORT ENVIRONMENT
-######################
-
-# # not storing properly due to environment issue with nlme package
-# save.image(file = 'results/fit.RData')
