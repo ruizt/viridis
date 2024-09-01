@@ -7,6 +7,7 @@ H. A. Moniz, J. H. Buck, H. L. Crowell, S. M. Goetz, T. D. Ruiz, S. M. Boback, E
 Repository contributors: T. D. Ruiz, H. A. Moniz.
 
 Paper: https://doi.org/10.1016/j.jtherbio.2024.103948
+
 Data: https://doi.org/10.5281/zenodo.13177060
 
 Software: R version 4.4.0 (2024-04-24), rstudio 2024.04.0+735 Chocolate Cosmos (desktop)
