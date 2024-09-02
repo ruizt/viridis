@@ -12,7 +12,7 @@ Data: https://doi.org/10.5281/zenodo.13177060
 
 Software: R version 4.4.0 (2024-04-24), rstudio 2024.04.0+735 Chocolate Cosmos (desktop)
 
-Packages, not including dependencies:
+Packages, not including dependencies or base packages:
 
 -   emmeans \* 1.10.1 2024-04-06 [1] CRAN (R 4.4.0)
 
